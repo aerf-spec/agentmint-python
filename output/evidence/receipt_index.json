@@ -1,0 +1,82 @@
+{
+  "package_created": "2026-04-21T18:27:39.042267+00:00",
+  "plan_id": "33327878-9b3c-4271-89d0-dbd3f534f967",
+  "plan_user": "security-lead@acme.com",
+  "key_id": "50e800a98073deac",
+  "total_receipts": 5,
+  "in_policy_count": 4,
+  "out_of_policy_count": 1,
+  "aiuc_controls": [
+    "E015",
+    "D003",
+    "B001"
+  ],
+  "receipts": [
+    {
+      "receipt_id": "851c90a3-4be8-4862-9bda-08eb26d7addd",
+      "short_id": "851c90a3",
+      "action": "read:iam:list-users",
+      "agent": "bluemagma-agent",
+      "in_policy": true,
+      "policy_reason": "matched scope read:iam:*",
+      "observed_at": "2026-04-21T18:27:22.179065+00:00",
+      "previous_receipt_hash": null,
+      "tsr_file": null
+    },
+    {
+      "receipt_id": "17b7a176-2320-4d37-8756-370dde276b4d",
+      "short_id": "17b7a176",
+      "action": "read:iam:list-mfa-status",
+      "agent": "bluemagma-agent",
+      "in_policy": true,
+      "policy_reason": "matched scope read:iam:*",
+      "observed_at": "2026-04-21T18:27:25.277150+00:00",
+      "previous_receipt_hash": "7a4c390942a6ab9fb2f19ce899dd0b937421e55734274b362ea95f9868e8b541",
+      "tsr_file": null
+    },
+    {
+      "receipt_id": "4da54c4a-b14f-475a-8ea4-d5e329f27507",
+      "short_id": "4da54c4a",
+      "action": "read:s3:list-buckets",
+      "agent": "bluemagma-agent",
+      "in_policy": true,
+      "policy_reason": "matched scope read:s3:*",
+      "observed_at": "2026-04-21T18:27:28.383012+00:00",
+      "previous_receipt_hash": "8503ee6e48fcaf1804a40e4d5ef49f5bf0825f7aeb637f4c60c528457466bdbf",
+      "tsr_file": null
+    },
+    {
+      "receipt_id": "efa5824c-b2d5-4be0-a1a0-ca4036fa5e5b",
+      "short_id": "efa5824c",
+      "action": "change:iam:attach-policy",
+      "agent": "bluemagma-agent",
+      "in_policy": false,
+      "policy_reason": "matched checkpoint change:iam:attach-policy",
+      "observed_at": "2026-04-21T18:27:32.006387+00:00",
+      "previous_receipt_hash": "050691124920aaac26b78375dc919421f978a5e2c314602124677e9e89b0e668",
+      "tsr_file": null
+    },
+    {
+      "receipt_id": "610d8ede-9407-4479-9ce7-55cca43bb3c9",
+      "short_id": "610d8ede",
+      "action": "change:iam:attach-policy-narrow:bob-readonlyaccess",
+      "agent": "bluemagma-agent",
+      "in_policy": true,
+      "policy_reason": "matched scope change:iam:attach-policy-narrow:*",
+      "observed_at": "2026-04-21T18:27:35.771914+00:00",
+      "previous_receipt_hash": "caafc9efda1ed05b5e9801b15f6158f1072ff0f0e2451bdee490f35611018a12",
+      "tsr_file": null
+    }
+  ],
+  "chain": {
+    "valid": true,
+    "length": 5,
+    "root_hash": "895422d3442ec2addf36914a215708f061ae00aa182a3ab1d7c42f85eca3460b",
+    "root_signature": "0f134e95a488af0191a4fdfed34cea638a46a6d2fd4f6e13d9c7db00a1fe08a0285e0bbec8d378b660fd9e554c9222ae1904101ea029bc8a8d2466c1ab46310c",
+    "root_timestamp": {
+      "tsa_url": "https://freetsa.org/tsr",
+      "tsq_file": "chain_root.tsq",
+      "tsr_file": "chain_root.tsr"
+    }
+  }
+}
