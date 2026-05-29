@@ -56,7 +56,7 @@ case "$OSSL_VER" in
 esac
 
 echo "-- Step 1 :: verify Ed25519 signature --"
-if openssl pkeyutl -verify \
+if openssl pkeyutl -verify 2>/dev/null \
     -pubin -inkey "$PUB" \
     -rawin -in "$RCPT" \
     -sigfile "$SIG"; then

@@ -1,0 +1,21 @@
+{
+  "id": "33327878-9b3c-4271-89d0-dbd3f534f967",
+  "type": "plan",
+  "user": "security-lead@acme.com",
+  "action": "compliance-evidence-collection",
+  "scope": [
+    "read:iam:*",
+    "read:s3:*",
+    "change:iam:attach-policy-narrow:*"
+  ],
+  "checkpoints": [
+    "change:iam:attach-policy"
+  ],
+  "delegates_to": [
+    "bluemagma-agent"
+  ],
+  "issued_at": "2026-04-21T18:27:16.384464+00:00",
+  "expires_at": "2026-04-21T18:32:16.384464+00:00",
+  "key_id": "50e800a98073deac",
+  "signature": "c109871a1204ab5feb94f010d42b2608f5f5a864dd2e6b76c1708651bf0462692a924b9b7555e4bad0ab83c9e392c3e868557734a10e2593e527290b179da60d"
+}

@@ -38,6 +38,7 @@ def header(n: int, title: str) -> None:
 
 
 def ok(msg: str) -> None:
+    import time; time.sleep(0.3)
     console.print(f"  [green]\u2713[/green] {msg}")
 
 
