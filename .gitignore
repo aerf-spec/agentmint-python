@@ -1,12 +1,17 @@
 # Python
 __pycache__/
 *.py[cod]
+*.pyc
 *.egg-info/
 dist/
 build/
 *.egg
 .venv/
 venv/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
 # IDE
 .idea/
@@ -22,6 +27,12 @@ Thumbs.db
 chain_state.json
 evidence_output/
 quickstart_evidence/
+output/
+tmp/
+test_report.json
+test_report.md
+examples/sample_evidence/
+receipts/
 
 # Secrets
 .env
@@ -43,6 +54,7 @@ quickstart_evidence/
 agentmint_evidence/
 
 healthcare_demo/evidence_output/
+healthcare_evidence/
 healthcare_evidence/healthcare_evidence/
 prescient_evidence/
 agentmint_decrypt_evidence/

@@ -30,3 +30,5 @@ pytest
 ```
 
 Review timeline: small PRs within a week, larger PRs within two weeks. This is a solo-maintainer project, so patience helps.
+
+Before opening a PR, make sure the relevant test suite passes locally.

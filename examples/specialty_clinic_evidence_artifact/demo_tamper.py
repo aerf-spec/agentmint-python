@@ -9,15 +9,16 @@ Usage:
     python3 -W ignore run_demo.py      # generate fresh receipts first
     python3 -W ignore demo_tamper.py   # then run this
 """
+
 import json
 import subprocess
 import sys
 import time
 from pathlib import Path
 
-ROOT      = Path(__file__).parent
-SAMPLE    = ROOT
-RECEIPT   = SAMPLE / "receipts" / "00001.json"
+ROOT = Path(__file__).parent
+SAMPLE = ROOT
+RECEIPT = SAMPLE / "receipts" / "00001.json"
 VERIFY_SH = ROOT / "verify.sh"
 
 GRN = "\033[92m"
@@ -28,8 +29,14 @@ BLD = "\033[1m"
 RST = "\033[0m"
 CYN = "\033[96m"
 
-def rule(): print("━" * 52)
-def blank(): print()
+
+def rule():
+    print("━" * 52)
+
+
+def blank():
+    print()
+
 
 def run_verify(label: str) -> bool:
     """Run verify.sh from inside sample_output. Return True if it passes."""
@@ -38,8 +45,7 @@ def run_verify(label: str) -> bool:
     result = subprocess.run(
         ["bash", str(VERIFY_SH)],
         cwd=str(ROOT),
-        capture_output=True,   # let output stream directly to terminal
-        
+        capture_output=True,  # let output stream directly to terminal
     )
     return result.returncode == 0
 
@@ -51,9 +57,9 @@ if not RECEIPT.exists():
     sys.exit(1)
 
 original_bytes = RECEIPT.read_bytes()
-receipt_dict   = json.loads(original_bytes)
+receipt_dict = json.loads(original_bytes)
 original_action = receipt_dict["action"]
-tampered_action = "prior_authorization_approved"   # vendor changed "submission" → "approved"
+tampered_action = "prior_authorization_approved"  # vendor changed "submission" → "approved"
 
 # ── Header ────────────────────────────────────────────────────
 blank()

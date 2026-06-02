@@ -36,6 +36,7 @@ Verify a proof in 10 lines of Python:
             current = sha256(0x01 + bytes.fromhex(current) + bytes.fromhex(sibling))
     assert current == proof.root_hash
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -64,12 +65,11 @@ def _hash_leaf(data: bytes) -> str:
 
 def _hash_node(left: str, right: str) -> str:
     """Hash an internal node: SHA-256(0x01 || left_bytes || right_bytes)."""
-    return hashlib.sha256(
-        _NODE_PREFIX + bytes.fromhex(left) + bytes.fromhex(right)
-    ).hexdigest()
+    return hashlib.sha256(_NODE_PREFIX + bytes.fromhex(left) + bytes.fromhex(right)).hexdigest()
 
 
 # ── Data structures ──────────────────────────────────────────
+
 
 @dataclass(frozen=True)
 class MerkleProof:
@@ -97,9 +97,7 @@ class MerkleProof:
         return {
             "leaf_index": self.leaf_index,
             "leaf_hash": self.leaf_hash,
-            "siblings": [
-                {"hash": h, "direction": d} for h, d in self.siblings
-            ],
+            "siblings": [{"hash": h, "direction": d} for h, d in self.siblings],
             "root_hash": self.root_hash,
         }
 
@@ -148,9 +146,7 @@ class MerkleTree:
             IndexError: if index is out of range.
         """
         if index < 0 or index >= self._leaf_count:
-            raise IndexError(
-                f"leaf index {index} out of range [0, {self._leaf_count})"
-            )
+            raise IndexError(f"leaf index {index} out of range [0, {self._leaf_count})")
 
         siblings: list[tuple[str, str]] = []
         idx = index
@@ -167,7 +163,8 @@ class MerkleTree:
                 direction = "left"
 
             sibling_hash = (
-                layer[sibling_idx] if sibling_idx < len(layer)
+                layer[sibling_idx]
+                if sibling_idx < len(layer)
                 else _hash_leaf(b"")  # padding sibling
             )
             siblings.append((sibling_hash, direction))
@@ -190,6 +187,7 @@ class MerkleTree:
 
 
 # ── Tree builder ─────────────────────────────────────────────
+
 
 def _next_power_of_2(n: int) -> int:
     """Smallest power of 2 >= n. Returns 1 for n <= 1."""
@@ -247,6 +245,7 @@ def build_tree(leaf_data: Sequence[bytes]) -> MerkleTree:
 
 
 # ── Proof verification ───────────────────────────────────────
+
 
 def verify_proof(proof: MerkleProof) -> bool:
     """Verify a Merkle inclusion proof.

@@ -26,13 +26,17 @@ def _short_id(jti: str) -> str:
 
 
 def mint(sub: str, action: str, jti: str) -> None:
-    print(f"{_badge('MINT', Color.GREEN)} {Color.DIM}sub:{Color.RESET}{Color.WHITE}{sub}{Color.RESET} "
-          f"{Color.DIM}action:{Color.RESET}{Color.CYAN}{action}{Color.RESET} "
-          f"{Color.DIM}jti:{_short_id(jti)}{Color.RESET}")
+    print(
+        f"{_badge('MINT', Color.GREEN)} {Color.DIM}sub:{Color.RESET}{Color.WHITE}{sub}{Color.RESET} "
+        f"{Color.DIM}action:{Color.RESET}{Color.CYAN}{action}{Color.RESET} "
+        f"{Color.DIM}jti:{_short_id(jti)}{Color.RESET}"
+    )
 
 
 def verify_ok(jti: str) -> None:
-    print(f"{_badge('OK', Color.CYAN)} {Color.WHITE}jti:{_short_id(jti)}{Color.RESET} {Color.GREEN}✓{Color.RESET}")
+    print(
+        f"{_badge('OK', Color.CYAN)} {Color.WHITE}jti:{_short_id(jti)}{Color.RESET} {Color.GREEN}✓{Color.RESET}"
+    )
 
 
 def reject(reason: str) -> None:
@@ -40,24 +44,32 @@ def reject(reason: str) -> None:
 
 
 def replay(jti: str) -> None:
-    print(f"{_badge('REPLAY', Color.YELLOW)} {Color.WHITE}jti:{_short_id(jti)}{Color.RESET} "
-          f"{Color.YELLOW}blocked{Color.RESET}")
+    print(
+        f"{_badge('REPLAY', Color.YELLOW)} {Color.WHITE}jti:{_short_id(jti)}{Color.RESET} "
+        f"{Color.YELLOW}blocked{Color.RESET}"
+    )
 
 
 def delegate_ok(agent: str, action: str, jti: str) -> None:
-    print(f"{_badge('DELEGATE', Color.GREEN)} {Color.DIM}agent:{Color.RESET}{Color.WHITE}{agent}{Color.RESET} "
-          f"{Color.DIM}action:{Color.RESET}{Color.CYAN}{action}{Color.RESET} {Color.GREEN}✓{Color.RESET}")
+    print(
+        f"{_badge('DELEGATE', Color.GREEN)} {Color.DIM}agent:{Color.RESET}{Color.WHITE}{agent}{Color.RESET} "
+        f"{Color.DIM}action:{Color.RESET}{Color.CYAN}{action}{Color.RESET} {Color.GREEN}✓{Color.RESET}"
+    )
 
 
 def delegate_deny(agent: str, action: str, reason: str) -> None:
-    print(f"{_badge('DELEGATE', Color.RED)} {Color.WHITE}{agent}{Color.RESET} "
-          f"{Color.DIM}→{Color.RESET} {Color.YELLOW}{action}{Color.RESET} {Color.RED}{reason}{Color.RESET}")
+    print(
+        f"{_badge('DELEGATE', Color.RED)} {Color.WHITE}{agent}{Color.RESET} "
+        f"{Color.DIM}→{Color.RESET} {Color.YELLOW}{action}{Color.RESET} {Color.RED}{reason}{Color.RESET}"
+    )
 
 
 def checkpoint(agent: str, action: str) -> None:
-    print(f"{_badge('CHECKPOINT', Color.YELLOW)} {Color.WHITE}{agent}{Color.RESET} "
-          f"{Color.DIM}→{Color.RESET} {Color.YELLOW}{action}{Color.RESET} "
-          f"{Color.YELLOW}⚠ requires human approval{Color.RESET}")
+    print(
+        f"{_badge('CHECKPOINT', Color.YELLOW)} {Color.WHITE}{agent}{Color.RESET} "
+        f"{Color.DIM}→{Color.RESET} {Color.YELLOW}{action}{Color.RESET} "
+        f"{Color.YELLOW}⚠ requires human approval{Color.RESET}"
+    )
 
 
 def authorized(action: str, user: str, jti: str) -> None:

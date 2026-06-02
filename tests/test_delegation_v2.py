@@ -56,12 +56,14 @@ class TestDelegateToAgent:
     def test_child_plan_created(self) -> None:
         notary = Notary()
         parent = notary.create_plan(
-            user="u@test.com", action="analysis",
+            user="u@test.com",
+            action="analysis",
             scope=["read:*", "write:summary:*"],
             delegates_to=["parent-agent"],
         )
         child = notary.delegate_to_agent(
-            parent, "child-agent",
+            parent,
+            "child-agent",
             requested_scope=["read:reports:*"],
         )
         assert "read:reports:*" in child.scope
@@ -70,8 +72,10 @@ class TestDelegateToAgent:
     def test_empty_intersection_raises(self) -> None:
         notary = Notary()
         parent = notary.create_plan(
-            user="u@test.com", action="t",
-            scope=["read:*"], delegates_to=["p"],
+            user="u@test.com",
+            action="t",
+            scope=["read:*"],
+            delegates_to=["p"],
         )
         with pytest.raises(NotaryError, match="scope intersection is empty"):
             notary.delegate_to_agent(parent, "c", requested_scope=["write:file"])
@@ -79,8 +83,10 @@ class TestDelegateToAgent:
     def test_child_inherits_checkpoints(self) -> None:
         notary = Notary()
         parent = notary.create_plan(
-            user="u@test.com", action="t",
-            scope=["read:*"], checkpoints=["read:secret:*"],
+            user="u@test.com",
+            action="t",
+            scope=["read:*"],
+            checkpoints=["read:secret:*"],
             delegates_to=["p"],
         )
         child = notary.delegate_to_agent(parent, "c", requested_scope=["read:public:*"])
@@ -93,7 +99,10 @@ class TestAuditTree:
     def test_no_children(self) -> None:
         notary = Notary()
         plan = notary.create_plan(
-            user="u@test.com", action="t", scope=["read:*"], delegates_to=["a"],
+            user="u@test.com",
+            action="t",
+            scope=["read:*"],
+            delegates_to=["a"],
         )
         tree = notary.audit_tree(plan.id)
         assert tree["plan_id"] == plan.id
@@ -102,8 +111,10 @@ class TestAuditTree:
     def test_one_child(self) -> None:
         notary = Notary()
         parent = notary.create_plan(
-            user="u@test.com", action="t",
-            scope=["read:*"], delegates_to=["p"],
+            user="u@test.com",
+            action="t",
+            scope=["read:*"],
+            delegates_to=["p"],
         )
         child = notary.delegate_to_agent(parent, "c", requested_scope=["read:file"])
         tree = notary.audit_tree(parent.id)
@@ -113,8 +124,10 @@ class TestAuditTree:
     def test_two_children(self) -> None:
         notary = Notary()
         parent = notary.create_plan(
-            user="u@test.com", action="t",
-            scope=["read:*", "write:*"], delegates_to=["p"],
+            user="u@test.com",
+            action="t",
+            scope=["read:*", "write:*"],
+            delegates_to=["p"],
         )
         c1 = notary.delegate_to_agent(parent, "c1", requested_scope=["read:*"])
         c2 = notary.delegate_to_agent(parent, "c2", requested_scope=["write:*"])

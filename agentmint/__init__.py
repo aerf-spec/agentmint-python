@@ -60,6 +60,7 @@ __all__ = [
     "ReplayError",
     "DeniedError",
     "AuthorizationError",
+    "notarise",
     # Decorator
     "notarise",
     "require_receipt",

@@ -1,52 +1,34 @@
 # Security Policy
 
-AgentMint is a security library. We take vulnerabilities in our own code seriously.
+## Supported Versions
 
-## Supported versions
+AgentMint is pre-1.0 software. Security fixes are applied to the latest released
+0.x version and to the main development branch. Receipt formats may change before
+1.0; security-sensitive format changes will be documented in release notes.
 
-| Version | Supported |
-| ------- | --------- |
-| 0.1.x   | ✅        |
+## Vulnerability Disclosure
 
-## Reporting a vulnerability
+Do not open a public GitHub issue for suspected vulnerabilities.
 
-**Do not open a public GitHub issue for security vulnerabilities.**
+Email security reports to security@agent-mint.dev with:
 
-Email **security@agent-mint.dev** with:
+- What happened and what impact you believe it has.
+- Reproduction steps or proof-of-concept code.
+- Affected AgentMint version and Python version.
+- Any suggested fix or mitigation.
 
-- Description of the vulnerability
-- Steps to reproduce
-- Impact assessment (what an attacker could achieve)
-- Suggested fix, if you have one
+We aim to acknowledge reports within 48 hours and provide an initial assessment
+within 5 business days. Request the project GPG key by emailing the same address
+with the subject `GPG key request`; the current fingerprint will be returned by
+email until a permanent public key location is published.
 
-You'll receive an acknowledgement within 48 hours. We aim to provide a substantive response (confirmed/not confirmed, timeline for fix) within 5 business days.
+## Security Architecture Summary
 
-## What qualifies
+AgentMint is designed for local, auditable receipt production. The default
+runtime has no telemetry and does not require outbound network access. Customer
+applications hold their own signing keys, and receipt verification must work
+offline without AgentMint infrastructure.
 
-We're especially interested in:
-
-- **Receipt forgery or tampering** — any way to produce a receipt that passes `verify_receipt()` without the original signing key, or to modify a receipt without detection.
-- **Hash chain breaks** — ways to insert, remove, or reorder receipts without breaking the chain verification.
-- **Scope escalation** — a delegate gaining permissions beyond what the parent plan grants, including through scope intersection edge cases.
-- **Shield bypasses** — prompt injection, data exfiltration, or secret patterns that evade the content scanner. Include the exact input that bypasses detection.
-- **Circuit breaker evasion** — ways to exceed rate limits without triggering the breaker.
-- **Timing or side-channel attacks** — information leakage through timing differences in scope checks or receipt verification.
-
-## What doesn't qualify
-
-- **Known limitations documented in [LIMITS.md](LIMITS.md)** — regex-based scanning won't catch novel semantic attacks, agent identity is asserted not proven, no behavioural baselines. These are documented boundaries, not vulnerabilities.
-- Denial of service through resource exhaustion (AgentMint runs in-process; if you can call it, you already have process access).
-- Issues that require physical access to the machine.
-
-## Disclosure timeline
-
-- **Day 0** — Report received, acknowledgement sent.
-- **Day 5** — Initial assessment shared with reporter.
-- **Day 30** — Target for fix in a new release. If we need more time, we'll tell you why.
-- **Day 90** — Public disclosure. We won't ask you to wait longer than 90 days.
-
-If we confirm a vulnerability, the reporter will be credited in the release notes (unless they prefer to remain anonymous).
-
-## PGP key
-
-If you'd like to encrypt your report, request our PGP public key by emailing security@agent-mint.dev with the subject line `PGP key request`.
+Security-sensitive code paths should remain deterministic, inspectable, and
+fail closed by default. AgentMint must not log secrets, raw credentials, auth
+tokens, real PHI, real PII, or regulated customer data.
