@@ -15,6 +15,7 @@ No API keys. No network calls. Runs in under 2 seconds.
     pip install agentmint
     PYTHONPATH=. python3 examples/harness_integration.py
 """
+
 from __future__ import annotations
 
 import time
@@ -119,7 +120,9 @@ def enforce(action, fn, args, kwargs, *, scope, breaker, notary, plan, agent):
 
     # 7. Sign receipt — Notary applies mode logic internally
     receipt = notary.notarise(
-        action=action, agent=agent, plan=plan,
+        action=action,
+        agent=agent,
+        plan=plan,
         evidence={
             **evidence,
             "shield_input": shield_input,
@@ -137,9 +140,15 @@ def enforce(action, fn, args, kwargs, *, scope, breaker, notary, plan, agent):
     if blocked_by and not is_shadow:
         print(f"  {R}✗{X} {action:<32s} blocked by {blocked_by} ({ms:.1f}ms)")
     elif blocked_by and is_shadow:
-        print(f"  {Y}⚠{X} {action:<32s} {Y}{receipt.short_id}{X} shadow caught: {blocked_by} ({ms:.1f}ms)")
+        print(
+            f"  {Y}⚠{X} {action:<32s} {Y}{receipt.short_id}{X} shadow caught: {blocked_by} ({ms:.1f}ms)"
+        )
     else:
-        chain_ref = receipt.previous_receipt_hash[:12] + "..." if receipt.previous_receipt_hash else "genesis"
+        chain_ref = (
+            receipt.previous_receipt_hash[:12] + "..."
+            if receipt.previous_receipt_hash
+            else "genesis"
+        )
         print(f"  {G}✓{X} {action:<32s} {Y}{receipt.short_id}{X} ({chain_ref}) {D}{ms:.1f}ms{X}")
 
     return {"ok": blocked_by is None, "blocked_by": blocked_by, "receipt": receipt, "ms": ms}
@@ -194,19 +203,33 @@ def main():
     print(f"  {B}ENFORCE PIPELINE{X}\n")
 
     calls = [
-        ("tool:lookup_booking",    lookup_booking,    ("BK-12345",),        {}),
-        ("tool:get_flight_status", get_flight_status,  ("AA-1234",),        {}),
-        ("tool:search_web",        search_web,         ("refund policy",),  {}),
-        ("tool:issue_refund",      issue_refund,       ("BK-12345", 299.99), {}),
-        ("tool:send_email",        send_email,         (),                  {"to": "cust@example.com", "body": "Refund processed."}),
+        ("tool:lookup_booking", lookup_booking, ("BK-12345",), {}),
+        ("tool:get_flight_status", get_flight_status, ("AA-1234",), {}),
+        ("tool:search_web", search_web, ("refund policy",), {}),
+        ("tool:issue_refund", issue_refund, ("BK-12345", 299.99), {}),
+        (
+            "tool:send_email",
+            send_email,
+            (),
+            {"to": "cust@example.com", "body": "Refund processed."},
+        ),
     ]
 
     results = []
     for action, fn, args, kwargs in calls:
-        results.append(enforce(
-            action, fn, args, kwargs,
-            scope=scope, breaker=breaker, notary=notary, plan=plan, agent=agent,
-        ))
+        results.append(
+            enforce(
+                action,
+                fn,
+                args,
+                kwargs,
+                scope=scope,
+                breaker=breaker,
+                notary=notary,
+                plan=plan,
+                agent=agent,
+            )
+        )
 
     # ── Chain verification ────────────────────────────
 
@@ -235,7 +258,9 @@ def main():
         rcpt = r["receipt"]
         print(f"  {Y}⚠{X}  {rcpt.action}")
         print(f"     would_block: {r['blocked_by']}")
-        print(f"     receipt says: in_policy={rcpt.in_policy}, original_verdict={rcpt.original_verdict}")
+        print(
+            f"     receipt says: in_policy={rcpt.in_policy}, original_verdict={rcpt.original_verdict}"
+        )
         print(f"     signature valid: {notary.verify_receipt(rcpt)}")
         print()
 
@@ -274,12 +299,12 @@ def main():
     print(f"  {B}6-COMPONENT HARNESS — ALL ACTIVE{X}\n")
 
     components = [
-        ("1. Access Control & Identity",  f"Ed25519 key {notary.key_id[:12]}... + signed plan"),
-        ("2. Context Management",         f"Session {notary.session_id[:12]}... + trajectory"),
-        ("3. Execution Orchestration",    "7-step enforce pipeline"),
-        ("4. Cost Governance",            "CircuitBreaker (10 calls/60s)"),
-        ("5. Tool & Skill Governance",    f"{len(scope)} scoped tools + Shield (25 patterns)"),
-        ("6. Audit & Compliance Trail",   "AgentMint shadow + file + OTel sinks"),
+        ("1. Access Control & Identity", f"Ed25519 key {notary.key_id[:12]}... + signed plan"),
+        ("2. Context Management", f"Session {notary.session_id[:12]}... + trajectory"),
+        ("3. Execution Orchestration", "7-step enforce pipeline"),
+        ("4. Cost Governance", "CircuitBreaker (10 calls/60s)"),
+        ("5. Tool & Skill Governance", f"{len(scope)} scoped tools + Shield (25 patterns)"),
+        ("6. Audit & Compliance Trail", "AgentMint shadow + file + OTel sinks"),
     ]
     for name, detail in components:
         print(f"  {G}✓{X} {name}")
@@ -287,7 +312,9 @@ def main():
 
     ok = sum(1 for r in results if r["ok"])
     caught = len(shadow_catches)
-    print(f"\n  {ok} clean · {caught} shadow-caught · {len(receipts)} signed · chain {'intact' if chain.valid else 'BROKEN'}")
+    print(
+        f"\n  {ok} clean · {caught} shadow-caught · {len(receipts)} signed · chain {'intact' if chain.valid else 'BROKEN'}"
+    )
     print(f"  {D}Ready? Notary(mode='enforce'){X}")
     print(f"\n  pip install agentmint · agentmint.run")
     print(f"{'=' * 64}\n")

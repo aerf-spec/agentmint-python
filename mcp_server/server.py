@@ -21,6 +21,7 @@ plans = {}
 # Tools
 # ─────────────────────────────────────────────────────────────
 
+
 @mcp.tool()
 def agentmint_issue_plan(
     user: str,
@@ -49,14 +50,14 @@ def agentmint_issue_plan(
 def agentmint_authorize(plan_id: str, agent: str, action: str) -> dict:
     """Agent requests authorization before acting."""
     plan = plans.get(plan_id)
-    
+
     if not plan:
         return {"authorized": False, "reason": "plan_not_found"}
     if plan.is_expired:
         return {"authorized": False, "reason": "plan_expired"}
-    
+
     result = mint.delegate(plan, agent, action)
-    
+
     if result.ok:
         return {"authorized": True, "receipt_id": result.receipt.short_id}
     return {"authorized": False, "reason": result.status.value}
@@ -67,15 +68,12 @@ def agentmint_audit(plan_id: str = None) -> dict:
     """View authorization audit trail."""
     if not plan_id:
         return {"plans": list(plans.keys())}
-    
+
     plan = plans.get(plan_id)
     if not plan:
         raise ToolError(f"Plan not found: {plan_id}")
-    
-    receipts = [
-        {"id": r.short_id, "agent": r.sub, "action": r.action}
-        for r in mint.audit(plan)
-    ]
+
+    receipts = [{"id": r.short_id, "agent": r.sub, "action": r.action} for r in mint.audit(plan)]
     return {"plan_id": plan_id, "receipts": receipts}
 
 

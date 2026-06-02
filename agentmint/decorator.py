@@ -3,6 +3,7 @@
 from __future__ import annotations
 from contextvars import ContextVar
 from functools import wraps
+
 try:
     from typing import Callable, Optional, TypeVar, ParamSpec
 except ImportError:
@@ -21,6 +22,7 @@ _current_receipt: ContextVar[Optional[Receipt]] = ContextVar("current_receipt", 
 
 class AuthorizationError(AgentMintError):
     """Raised when action is not authorized."""
+
     def __init__(self, reason: str, action: str, receipt_id: Optional[str] = None):
         self.reason = reason
         self.action = action
@@ -52,6 +54,7 @@ def require_receipt(mint: AgentMint, action: str) -> Callable[[Callable[P, T]], 
         def write_file(path: str, content: str) -> None:
             ...
     """
+
     def decorator(func: Callable[P, T]) -> Callable[P, T]:
         @wraps(func)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
@@ -75,5 +78,7 @@ def require_receipt(mint: AgentMint, action: str) -> Callable[[Callable[P, T]], 
 
             console.authorized(action, receipt.sub, receipt.id)
             return func(*args, **kwargs)
+
         return wrapper
+
     return decorator

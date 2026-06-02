@@ -27,6 +27,7 @@ Example (myframework.py):
             # Return List[ToolCandidate]
             ...
 """
+
 from __future__ import annotations
 
 import importlib
@@ -70,6 +71,7 @@ def _discover_user_detectors():
     if not user_dir.is_dir():
         return
     import sys
+
     sys.path.insert(0, str(user_dir))
     for py_file in user_dir.glob("*.py"):
         if not py_file.name.startswith("_"):
@@ -108,6 +110,7 @@ class BaseDetector(ABC):
       match_imports() — return True if this file uses your framework
                         (affects confidence, not whether detector runs)
     """
+
     FRAMEWORK: str = ""
     METADATA_DEPENDENCIES = (PositionProvider,)
 

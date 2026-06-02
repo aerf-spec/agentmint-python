@@ -62,8 +62,7 @@ class CircuitBreaker:
                 is_allowed=False,
                 state="open",
                 reason=(
-                    f"rate_limit_exceeded:"
-                    f"{count}/{self._max_calls} in {self._window_seconds}s"
+                    f"rate_limit_exceeded:{count}/{self._max_calls} in {self._window_seconds}s"
                 ),
             )
 
@@ -72,10 +71,7 @@ class CircuitBreaker:
             return BreakerResult(
                 is_allowed=True,
                 state="half_open",
-                reason=(
-                    f"approaching_limit:"
-                    f"{count}/{self._max_calls} in {self._window_seconds}s"
-                ),
+                reason=(f"approaching_limit:{count}/{self._max_calls} in {self._window_seconds}s"),
             )
 
         self._states[agent] = "closed"

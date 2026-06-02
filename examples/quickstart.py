@@ -31,17 +31,18 @@ NO_COLOR = os.environ.get("NO_COLOR", "") != ""
 
 class C:
     """ANSI color codes. Respects NO_COLOR standard."""
-    G = "" if NO_COLOR else "\033[92m"   # green
-    R = "" if NO_COLOR else "\033[91m"   # red
-    Y = "" if NO_COLOR else "\033[93m"   # yellow
-    B = "" if NO_COLOR else "\033[94m"   # blue
-    M = "" if NO_COLOR else "\033[95m"   # magenta
+
+    G = "" if NO_COLOR else "\033[92m"  # green
+    R = "" if NO_COLOR else "\033[91m"  # red
+    Y = "" if NO_COLOR else "\033[93m"  # yellow
+    B = "" if NO_COLOR else "\033[94m"  # blue
+    M = "" if NO_COLOR else "\033[95m"  # magenta
     CN = "" if NO_COLOR else "\033[96m"  # cyan
-    W = "" if NO_COLOR else "\033[97m"   # white/bright
-    D = "" if NO_COLOR else "\033[2m"    # dim
-    BD = "" if NO_COLOR else "\033[1m"   # bold
-    X = "" if NO_COLOR else "\033[0m"    # reset
-    UL = "" if NO_COLOR else "\033[4m"   # underline
+    W = "" if NO_COLOR else "\033[97m"  # white/bright
+    D = "" if NO_COLOR else "\033[2m"  # dim
+    BD = "" if NO_COLOR else "\033[1m"  # bold
+    X = "" if NO_COLOR else "\033[0m"  # reset
+    UL = "" if NO_COLOR else "\033[4m"  # underline
 
 
 def banner(text: str) -> None:
@@ -86,16 +87,42 @@ def link(name: str, url: str) -> None:
 
 def box(lines: list[str], color: str = C.D, title: str = "") -> None:
     """Draw a box around lines of text."""
-    max_w = max(len(line.replace("\033[92m", "").replace("\033[91m", "").replace("\033[93m", "")
-                       .replace("\033[94m", "").replace("\033[95m", "").replace("\033[96m", "")
-                       .replace("\033[97m", "").replace("\033[2m", "").replace("\033[1m", "")
-                       .replace("\033[0m", "").replace("\033[4m", ""))
-                 for line in lines) if lines else 40
+    max_w = (
+        max(
+            len(
+                line.replace("\033[92m", "")
+                .replace("\033[91m", "")
+                .replace("\033[93m", "")
+                .replace("\033[94m", "")
+                .replace("\033[95m", "")
+                .replace("\033[96m", "")
+                .replace("\033[97m", "")
+                .replace("\033[2m", "")
+                .replace("\033[1m", "")
+                .replace("\033[0m", "")
+                .replace("\033[4m", "")
+            )
+            for line in lines
+        )
+        if lines
+        else 40
+    )
     w = max(max_w + 2, 50)
     # Strip ANSI from title for width calculation
     title_clean = title
-    for code in ["\033[92m", "\033[91m", "\033[93m", "\033[94m", "\033[95m",
-                 "\033[96m", "\033[97m", "\033[2m", "\033[1m", "\033[0m", "\033[4m"]:
+    for code in [
+        "\033[92m",
+        "\033[91m",
+        "\033[93m",
+        "\033[94m",
+        "\033[95m",
+        "\033[96m",
+        "\033[97m",
+        "\033[2m",
+        "\033[1m",
+        "\033[0m",
+        "\033[4m",
+    ]:
         title_clean = title_clean.replace(code, "")
     t = f" {title} " if title else ""
     t_clean = f" {title_clean} " if title_clean else ""
@@ -105,8 +132,19 @@ def box(lines: list[str], color: str = C.D, title: str = "") -> None:
     for line in lines:
         # Calculate visible length (strip ANSI)
         visible = line
-        for code in ["\033[92m", "\033[91m", "\033[93m", "\033[94m", "\033[95m",
-                     "\033[96m", "\033[97m", "\033[2m", "\033[1m", "\033[0m", "\033[4m"]:
+        for code in [
+            "\033[92m",
+            "\033[91m",
+            "\033[93m",
+            "\033[94m",
+            "\033[95m",
+            "\033[96m",
+            "\033[97m",
+            "\033[2m",
+            "\033[1m",
+            "\033[0m",
+            "\033[4m",
+        ]:
             visible = visible.replace(code, "")
         pad = w - len(visible)
         print(f"      {color}│{C.X} {line}{' ' * max(0, pad - 1)}{color}│{C.X}")
@@ -144,6 +182,7 @@ def pause(s: float = 0.3) -> None:
 
 
 # ── Main ───────────────────────────────────────────────────
+
 
 def main() -> None:
     banner("AgentMint Quickstart")
@@ -190,20 +229,24 @@ def main() -> None:
         ttl_seconds=600,
     )
 
-    box([
-        f"{C.W}Plan {plan.id[:8]}{C.X}",
-        f"",
-        f"{C.D}Authorized by:{C.X}  {C.W}security-team@example.com{C.X}",
-        f"{C.D}Delegates to:{C.X}   {C.CN}demo-agent{C.X}",
-        f"{C.D}TTL:{C.X}             600 seconds",
-        f"",
-        f"{C.G}✓ allow{C.X}  read:reports:*     {C.D}(any report){C.X}",
-        f"{C.G}✓ allow{C.X}  tts:standard:*     {C.D}(standard TTS){C.X}",
-        f"{C.Y}⚠ block{C.X}  read:secrets:*     {C.D}(needs human approval){C.X}",
-        f"{C.Y}⚠ block{C.X}  tts:clone:*        {C.D}(needs human approval){C.X}",
-        f"",
-        f"{C.D}Signature: {plan.signature[:40]}...{C.X}",
-    ], color=C.CN, title=f"{C.CN} PLAN {C.X}")
+    box(
+        [
+            f"{C.W}Plan {plan.id[:8]}{C.X}",
+            f"",
+            f"{C.D}Authorized by:{C.X}  {C.W}security-team@example.com{C.X}",
+            f"{C.D}Delegates to:{C.X}   {C.CN}demo-agent{C.X}",
+            f"{C.D}TTL:{C.X}             600 seconds",
+            f"",
+            f"{C.G}✓ allow{C.X}  read:reports:*     {C.D}(any report){C.X}",
+            f"{C.G}✓ allow{C.X}  tts:standard:*     {C.D}(standard TTS){C.X}",
+            f"{C.Y}⚠ block{C.X}  read:secrets:*     {C.D}(needs human approval){C.X}",
+            f"{C.Y}⚠ block{C.X}  tts:clone:*        {C.D}(needs human approval){C.X}",
+            f"",
+            f"{C.D}Signature: {plan.signature[:40]}...{C.X}",
+        ],
+        color=C.CN,
+        title=f"{C.CN} PLAN {C.X}",
+    )
 
     ok("Plan signed with Ed25519")
     pause(0.5)
@@ -217,11 +260,15 @@ def main() -> None:
     live_1 = False
 
     print(f"      {C.D}Pre-action — what the agent wants to do:{C.X}\n")
-    box([
-        f"{C.D}agent:{C.X}    {C.CN}demo-agent{C.X}",
-        f"{C.D}action:{C.X}   {C.CN}{action_1}{C.X}",
-        f"{C.D}scope:{C.X}    read:reports:*  →  {C.G}MATCH{C.X}",
-    ], color=C.B, title=f"{C.B} REQUEST {C.X}")
+    box(
+        [
+            f"{C.D}agent:{C.X}    {C.CN}demo-agent{C.X}",
+            f"{C.D}action:{C.X}   {C.CN}{action_1}{C.X}",
+            f"{C.D}scope:{C.X}    read:reports:*  →  {C.G}MATCH{C.X}",
+        ],
+        color=C.B,
+        title=f"{C.B} REQUEST {C.X}",
+    )
 
     pause(0.3)
 
@@ -236,7 +283,12 @@ def main() -> None:
             response = client.messages.create(
                 model="claude-sonnet-4-20250514",
                 max_tokens=100,
-                messages=[{"role": "user", "content": "Summarize in one sentence: Q4 revenue was $4.2M, up 15% YoY, driven by enterprise expansion."}],
+                messages=[
+                    {
+                        "role": "user",
+                        "content": "Summarize in one sentence: Q4 revenue was $4.2M, up 15% YoY, driven by enterprise expansion.",
+                    }
+                ],
             )
             elapsed = time.time() - t0
             summary = response.content[0].text
@@ -267,9 +319,13 @@ def main() -> None:
         }
 
     print(f"\n      {C.D}Post-action — what happened:{C.X}\n")
-    box([
-        *[f"{C.D}{k}:{C.X}  {C.W}{v}{C.X}" for k, v in evidence_1.items()],
-    ], color=C.G, title=f"{C.G} RESULT {C.X}")
+    box(
+        [
+            *[f"{C.D}{k}:{C.X}  {C.W}{v}{C.X}" for k, v in evidence_1.items()],
+        ],
+        color=C.G,
+        title=f"{C.G} RESULT {C.X}",
+    )
 
     pause(0.3)
 
@@ -314,17 +370,20 @@ def main() -> None:
 
     # Show the receipt
     print(f"\n      {C.BD}{C.G}Receipt 1 — IN POLICY{C.X}\n")
-    json_block(receipt_1.to_dict(), annotations={
-        "plan_id": "links to the human-approved plan above",
-        "agent": "who acted",
-        "action": "what they did",
-        "in_policy": "was it authorized? YES",
-        "policy_reason": "which scope pattern matched",
-        "evidence_hash_sha512": "SHA-512 of evidence — tamper detection",
-        "signature": "Ed25519 — covers every field above",
-        "tsa_url": "independent third-party time authority",
-        "previous_receipt_hash": "chain link (first in chain)",
-    })
+    json_block(
+        receipt_1.to_dict(),
+        annotations={
+            "plan_id": "links to the human-approved plan above",
+            "agent": "who acted",
+            "action": "what they did",
+            "in_policy": "was it authorized? YES",
+            "policy_reason": "which scope pattern matched",
+            "evidence_hash_sha512": "SHA-512 of evidence — tamper detection",
+            "signature": "Ed25519 — covers every field above",
+            "tsa_url": "independent third-party time authority",
+            "previous_receipt_hash": "chain link (first in chain)",
+        },
+    )
 
     pause(0.5)
 
@@ -337,13 +396,17 @@ def main() -> None:
     checkpoint_pattern = "tts:clone:*" if elevenlabs_key else "read:secrets:*"
 
     print(f"      {C.D}Pre-action — agent attempts a checkpointed action:{C.X}\n")
-    box([
-        f"{C.D}agent:{C.X}    {C.CN}demo-agent{C.X}",
-        f"{C.D}action:{C.X}   {C.R}{action_2}{C.X}",
-        f"{C.D}scope:{C.X}    {checkpoint_pattern}  →  {C.R}CHECKPOINT{C.X}",
-        f"",
-        f"{C.Y}Requires human approval — not granted{C.X}",
-    ], color=C.R, title=f"{C.R} BLOCKED {C.X}")
+    box(
+        [
+            f"{C.D}agent:{C.X}    {C.CN}demo-agent{C.X}",
+            f"{C.D}action:{C.X}   {C.R}{action_2}{C.X}",
+            f"{C.D}scope:{C.X}    {checkpoint_pattern}  →  {C.R}CHECKPOINT{C.X}",
+            f"",
+            f"{C.Y}Requires human approval — not granted{C.X}",
+        ],
+        color=C.R,
+        title=f"{C.R} BLOCKED {C.X}",
+    )
 
     pause(0.3)
 
@@ -365,9 +428,13 @@ def main() -> None:
         }
 
     print(f"\n      {C.D}Violation recorded as evidence:{C.X}\n")
-    box([
-        *[f"{C.D}{k}:{C.X}  {C.W}{v}{C.X}" for k, v in evidence_2.items()],
-    ], color=C.R, title=f"{C.R} VIOLATION EVIDENCE {C.X}")
+    box(
+        [
+            *[f"{C.D}{k}:{C.X}  {C.W}{v}{C.X}" for k, v in evidence_2.items()],
+        ],
+        color=C.R,
+        title=f"{C.R} VIOLATION EVIDENCE {C.X}",
+    )
 
     pause(0.3)
 
@@ -405,12 +472,15 @@ def main() -> None:
         dim("↑ SHA-256 of Receipt 1 — delete or reorder any receipt, chain breaks")
 
     print(f"\n      {C.BD}{C.R}Receipt 2 — VIOLATION{C.X}\n")
-    json_block(receipt_2.to_dict(), annotations={
-        "in_policy": "was it authorized? NO",
-        "policy_reason": "which checkpoint pattern matched",
-        "previous_receipt_hash": "SHA-256 of receipt 1 — chain intact",
-        "signature": "Ed25519 — violations are signed too",
-    })
+    json_block(
+        receipt_2.to_dict(),
+        annotations={
+            "in_policy": "was it authorized? NO",
+            "policy_reason": "which checkpoint pattern matched",
+            "previous_receipt_hash": "SHA-256 of receipt 1 — chain intact",
+            "signature": "Ed25519 — violations are signed too",
+        },
+    )
 
     pause(0.5)
 
@@ -542,6 +612,7 @@ def main() -> None:
 
     # Cleanup temp dir
     import shutil
+
     shutil.rmtree(verify_dir, ignore_errors=True)
 
     pause(0.3)
@@ -554,20 +625,24 @@ def main() -> None:
     out_count = 2 - in_count
     ts_count = sum(1 for r in [receipt_1, receipt_2] if r.timestamp_result)
 
-    box([
-        f"",
-        f"  {C.W}Receipts:{C.X}      2 total  {C.G}{in_count} in-policy{C.X}  {C.R}{out_count} violation{C.X}",
-        f"  {C.W}Signatures:{C.X}    Ed25519 (private key never left this machine)",
-        f"  {C.W}Timestamps:{C.X}    {ts_count} via FreeTSA (independent third party)",
-        f"  {C.W}Chain:{C.X}         Receipt 2 → SHA-256(Receipt 1)",
-        f"",
-        f"  {C.W}Evidence:{C.X}      {zip_path}",
-        f"  {C.W}Verify:{C.X}        unzip *.zip && bash VERIFY.sh",
-        f"",
-        f"  {C.D}No AgentMint software needed to verify.{C.X}",
-        f"  {C.D}Just OpenSSL + Python.{C.X}",
-        f"",
-    ], color=C.CN, title=f"{C.CN} RESULTS {C.X}")
+    box(
+        [
+            f"",
+            f"  {C.W}Receipts:{C.X}      2 total  {C.G}{in_count} in-policy{C.X}  {C.R}{out_count} violation{C.X}",
+            f"  {C.W}Signatures:{C.X}    Ed25519 (private key never left this machine)",
+            f"  {C.W}Timestamps:{C.X}    {ts_count} via FreeTSA (independent third party)",
+            f"  {C.W}Chain:{C.X}         Receipt 2 → SHA-256(Receipt 1)",
+            f"",
+            f"  {C.W}Evidence:{C.X}      {zip_path}",
+            f"  {C.W}Verify:{C.X}        unzip *.zip && bash VERIFY.sh",
+            f"",
+            f"  {C.D}No AgentMint software needed to verify.{C.X}",
+            f"  {C.D}Just OpenSSL + Python.{C.X}",
+            f"",
+        ],
+        color=C.CN,
+        title=f"{C.CN} RESULTS {C.X}",
+    )
 
     # ══════════════════════════════════════════════════════════
 

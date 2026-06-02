@@ -6,6 +6,7 @@ Generates an Ed25519 keypair, constructs a sample prior-authorization payload
 (no PHI), produces a signed receipt referencing the payload only by SHA-256,
 then verifies the receipt offline using openssl as a subprocess.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -38,7 +39,9 @@ def header(n: int, title: str) -> None:
 
 
 def ok(msg: str) -> None:
-    import time; time.sleep(0.3)
+    import time
+
+    time.sleep(0.3)
     console.print(f"  [green]\u2713[/green] {msg}")
 
 
@@ -162,10 +165,17 @@ def phase_3(private: Ed25519PrivateKey, payload_digest: str) -> None:
 def phase_4() -> None:
     header(4, "Verify offline with openssl")
     cmd = [
-        "openssl", "pkeyutl", "-verify",
-        "-pubin", "-inkey", "keys/public.pem",
-        "-rawin", "-in", "receipts/00001.json",
-        "-sigfile", "receipts/00001.json.sig",
+        "openssl",
+        "pkeyutl",
+        "-verify",
+        "-pubin",
+        "-inkey",
+        "keys/public.pem",
+        "-rawin",
+        "-in",
+        "receipts/00001.json",
+        "-sigfile",
+        "receipts/00001.json.sig",
     ]
     console.print(f"[dim]$ {' '.join(cmd)}[/dim]")
     try:
@@ -189,9 +199,13 @@ def control_table() -> None:
     table.add_column("Framework", style="cyan", no_wrap=True)
     table.add_column("Citation", style="bold")
     table.add_column("What this receipt provides")
-    table.add_row("HIPAA", "\u00a7164.312(b)", "Audit controls -- per-action signed record (deployment)")
+    table.add_row(
+        "HIPAA", "\u00a7164.312(b)", "Audit controls -- per-action signed record (deployment)"
+    )
     table.add_row("HIPAA", "\u00a7164.312(c)(1)", "Integrity -- tamper detection via signature")
-    table.add_row("HIPAA", "\u00a7164.312(d)", "Authentication -- action signed by customer-held key")
+    table.add_row(
+        "HIPAA", "\u00a7164.312(d)", "Authentication -- action signed by customer-held key"
+    )
     table.add_row("HITRUST", "09.aa", "Audit logging primitive (deployment wraps via decorator)")
     table.add_row("HITRUST", "09.ac", "Log protection -- customer-held key prevents edits")
     table.add_row("HITRUST", "09.ad", "Admin/operator logs use same primitive (deployment)")

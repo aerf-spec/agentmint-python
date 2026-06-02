@@ -7,6 +7,7 @@ checks, and generates:
     assess_report.md     Client-readable report.
     draft-policy.yaml    Ready-to-use policy from discovered tools.
 """
+
 from __future__ import annotations
 
 import json
@@ -27,6 +28,7 @@ from .candidates import ToolCandidate
 @dataclass
 class Check:
     """One pass/fail readiness check."""
+
     id: str
     category: str
     name: str
@@ -38,6 +40,7 @@ class Check:
 @dataclass
 class Assessment:
     """Complete assessment result."""
+
     target: str
     assessed_at: str
     scan_ms: float
@@ -76,51 +79,136 @@ def _build_checks(tools: list[ToolCandidate]) -> list[Check]:
 
     checks: list[Check] = []
 
-    def add(id_: str, cat: str, name: str, ok: bool,
-            sev: str = "high", rec: str = "") -> None:
+    def add(id_: str, cat: str, name: str, ok: bool, sev: str = "high", rec: str = "") -> None:
         checks.append(Check(id_, cat, name, ok, sev, rec))
 
     # Tool Governance (5)
-    add("TG-001", "Tool Governance", "Tool inventory complete",
-        has_tools, "critical", "Run `agentmint init .` to discover tools")
-    add("TG-002", "Tool Governance", "High-confidence detections",
-        len(high_conf) == len(tools) and has_tools, "high",
-        f"{len(tools) - len(high_conf)} tools need manual review")
-    add("TG-003", "Tool Governance", "Scope suggestions generated",
-        has_tools and all(t.scope_suggestion for t in tools), "high",
-        "Run `agentmint init . --write` to generate policy")
-    add("TG-004", "Tool Governance", "Write/delete ops identified",
-        not write_ops or has_tools, "high",
-        f"{len(write_ops)} dangerous operations need checkpoints")
-    add("TG-005", "Tool Governance", "Network ops identified",
-        not network_ops or has_tools, "medium",
-        f"{len(network_ops)} network tools need output scanning")
+    add(
+        "TG-001",
+        "Tool Governance",
+        "Tool inventory complete",
+        has_tools,
+        "critical",
+        "Run `agentmint init .` to discover tools",
+    )
+    add(
+        "TG-002",
+        "Tool Governance",
+        "High-confidence detections",
+        len(high_conf) == len(tools) and has_tools,
+        "high",
+        f"{len(tools) - len(high_conf)} tools need manual review",
+    )
+    add(
+        "TG-003",
+        "Tool Governance",
+        "Scope suggestions generated",
+        has_tools and all(t.scope_suggestion for t in tools),
+        "high",
+        "Run `agentmint init . --write` to generate policy",
+    )
+    add(
+        "TG-004",
+        "Tool Governance",
+        "Write/delete ops identified",
+        not write_ops or has_tools,
+        "high",
+        f"{len(write_ops)} dangerous operations need checkpoints",
+    )
+    add(
+        "TG-005",
+        "Tool Governance",
+        "Network ops identified",
+        not network_ops or has_tools,
+        "medium",
+        f"{len(network_ops)} network tools need output scanning",
+    )
 
     # Runtime Enforcement (4)
-    add("RE-001", "Runtime Enforcement", "Input scanning available",
-        True, "critical", "Shield provides 25 regex + fuzzy + entropy patterns")
-    add("RE-002", "Runtime Enforcement", "Output scanning available",
-        True, "critical", "Shield scans tool outputs — supply chain defense")
-    add("RE-003", "Runtime Enforcement", "Rate limiting available",
-        True, "high", "CircuitBreaker with per-agent sliding window")
-    add("RE-004", "Runtime Enforcement", "Sub-50ms enforcement",
-        True, "medium", "Measured: ~2-4ms per receipt")
+    add(
+        "RE-001",
+        "Runtime Enforcement",
+        "Input scanning available",
+        True,
+        "critical",
+        "Shield provides 25 regex + fuzzy + entropy patterns",
+    )
+    add(
+        "RE-002",
+        "Runtime Enforcement",
+        "Output scanning available",
+        True,
+        "critical",
+        "Shield scans tool outputs — supply chain defense",
+    )
+    add(
+        "RE-003",
+        "Runtime Enforcement",
+        "Rate limiting available",
+        True,
+        "high",
+        "CircuitBreaker with per-agent sliding window",
+    )
+    add(
+        "RE-004",
+        "Runtime Enforcement",
+        "Sub-50ms enforcement",
+        True,
+        "medium",
+        "Measured: ~2-4ms per receipt",
+    )
 
     # Evidence Integrity (3)
-    add("EI-001", "Evidence Integrity", "Ed25519 signing",
-        True, "critical", "Notary signs every receipt automatically")
-    add("EI-002", "Evidence Integrity", "SHA-256 hash chains",
-        True, "critical", "Tamper-evident chain per plan")
-    add("EI-003", "Evidence Integrity", "Evidence export",
-        True, "high", "notary.export_evidence() → portable zip")
+    add(
+        "EI-001",
+        "Evidence Integrity",
+        "Ed25519 signing",
+        True,
+        "critical",
+        "Notary signs every receipt automatically",
+    )
+    add(
+        "EI-002",
+        "Evidence Integrity",
+        "SHA-256 hash chains",
+        True,
+        "critical",
+        "Tamper-evident chain per plan",
+    )
+    add(
+        "EI-003",
+        "Evidence Integrity",
+        "Evidence export",
+        True,
+        "high",
+        "notary.export_evidence() → portable zip",
+    )
 
     # Compliance Mapping (3)
-    add("CM-001", "Compliance Mapping", "AIUC-1 controls",
-        True, "high", "E015, D003, B001 auto-mapped in receipts")
-    add("CM-002", "Compliance Mapping", "SOC 2 audit trail",
-        True, "high", "Signed + hash-chained satisfies CC6/CC7")
-    add("CM-003", "Compliance Mapping", "OWASP LLM Top 10",
-        True, "high", "Shield covers LLM01, LLM03, LLM06")
+    add(
+        "CM-001",
+        "Compliance Mapping",
+        "AIUC-1 controls",
+        True,
+        "high",
+        "E015, D003, B001 auto-mapped in receipts",
+    )
+    add(
+        "CM-002",
+        "Compliance Mapping",
+        "SOC 2 audit trail",
+        True,
+        "high",
+        "Signed + hash-chained satisfies CC6/CC7",
+    )
+    add(
+        "CM-003",
+        "Compliance Mapping",
+        "OWASP LLM Top 10",
+        True,
+        "high",
+        "Shield covers LLM01, LLM03, LLM06",
+    )
 
     return checks
 
@@ -130,8 +218,9 @@ def _score(checks: list[Check]) -> tuple[int, str]:
     total = sum(_WEIGHTS.get(c.severity, 3) for c in checks)
     earned = sum(_WEIGHTS.get(c.severity, 3) for c in checks if c.passed)
     pct = round(earned / total * 100) if total else 0
-    grade = ("A" if pct >= 90 else "B" if pct >= 75 else "C" if pct >= 60
-             else "D" if pct >= 40 else "F")
+    grade = (
+        "A" if pct >= 90 else "B" if pct >= 75 else "C" if pct >= 60 else "D" if pct >= 40 else "F"
+    )
     return pct, grade
 
 
@@ -203,16 +292,18 @@ def _to_policy_yaml(tools: list[ToolCandidate]) -> str:
             lines.append(f"  - '{t.scope_suggestion}'  # {t.operation_guess}")
         lines.append("")
 
-    lines.extend([
-        "circuit_breaker:",
-        "  max_calls: 100",
-        "  window_seconds: 60",
-        "",
-        "shield:",
-        "  input_scan: true",
-        "  output_scan: true  # supply chain defense",
-        "",
-    ])
+    lines.extend(
+        [
+            "circuit_breaker:",
+            "  max_calls: 100",
+            "  window_seconds: 60",
+            "",
+            "shield:",
+            "  input_scan: true",
+            "  output_scan: true  # supply chain defense",
+            "",
+        ]
+    )
     return "\n".join(lines)
 
 
@@ -237,9 +328,13 @@ def run_assessment(
 
     tools = [
         {
-            "file": t.file, "line": t.line, "symbol": t.symbol,
-            "framework": t.framework, "operation": t.operation_guess,
-            "scope": t.scope_suggestion, "confidence": t.confidence,
+            "file": t.file,
+            "line": t.line,
+            "symbol": t.symbol,
+            "framework": t.framework,
+            "operation": t.operation_guess,
+            "scope": t.scope_suggestion,
+            "confidence": t.confidence,
         }
         for t in candidates
     ]

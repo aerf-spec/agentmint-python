@@ -1,4 +1,5 @@
 """Raw fallback detector: tool-like function names"""
+
 from __future__ import annotations
 from typing import List, Optional, Set
 
@@ -10,9 +11,21 @@ from . import BaseDetector, ImportInfo, register
 
 
 PREFIXES = (
-    "fetch_", "search_", "write_", "delete_", "execute_",
-    "get_", "create_", "update_", "send_", "read_",
-    "query_", "lookup_", "remove_", "upload_", "download_",
+    "fetch_",
+    "search_",
+    "write_",
+    "delete_",
+    "execute_",
+    "get_",
+    "create_",
+    "update_",
+    "send_",
+    "read_",
+    "query_",
+    "lookup_",
+    "remove_",
+    "upload_",
+    "download_",
 )
 
 
@@ -49,13 +62,17 @@ class _Visitor(cst.CSTVisitor):
         if not any(name.startswith(p) for p in PREFIXES):
             return
         has_doc = _has_docstring(node)
-        self.candidates.append(ToolCandidate(
-            file=self.file_path, line=self._line(node),
-            framework="raw", symbol=name,
-            boundary="definition",
-            confidence="medium" if has_doc else "low",
-            detection_rule="name heuristic",
-        ))
+        self.candidates.append(
+            ToolCandidate(
+                file=self.file_path,
+                line=self._line(node),
+                framework="raw",
+                symbol=name,
+                boundary="definition",
+                confidence="medium" if has_doc else "low",
+                detection_rule="name heuristic",
+            )
+        )
 
     def _line(self, node) -> int:
         try:

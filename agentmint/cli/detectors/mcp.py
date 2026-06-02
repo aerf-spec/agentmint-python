@@ -1,4 +1,5 @@
 """MCP detector: @server.tool() on async functions"""
+
 from __future__ import annotations
 from typing import List
 
@@ -41,13 +42,17 @@ class _Visitor(cst.CSTVisitor):
                 if isinstance(raw, cst.Call):
                     raw = raw.func
                 if isinstance(raw, cst.Attribute):
-                    self.candidates.append(ToolCandidate(
-                        file=self.file_path, line=self._line(node),
-                        framework="mcp", symbol=node.name.value,
-                        boundary="definition",
-                        confidence="high" if self.confirmed else "medium",
-                        detection_rule="@server.tool()",
-                    ))
+                    self.candidates.append(
+                        ToolCandidate(
+                            file=self.file_path,
+                            line=self._line(node),
+                            framework="mcp",
+                            symbol=node.name.value,
+                            boundary="definition",
+                            confidence="high" if self.confirmed else "medium",
+                            detection_rule="@server.tool()",
+                        )
+                    )
 
     def _line(self, node) -> int:
         try:

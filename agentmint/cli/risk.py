@@ -28,6 +28,7 @@ Example:
 Classification is deterministic. No LLM, no heuristics, no network calls.
 The same tool name always produces the same risk level.
 """
+
 from __future__ import annotations
 
 import re
@@ -41,6 +42,7 @@ __all__ = ["RiskLevel", "classify_risk", "SENSITIVE_RESOURCE_PATTERNS"]
 
 
 # ── Risk levels ──────────────────────────────────────────────
+
 
 class RiskLevel(IntEnum):
     """Ordered risk levels. Higher value = more dangerous.
@@ -71,12 +73,12 @@ class RiskLevel(IntEnum):
 #   "database_delete": RiskLevel.CRITICAL,
 
 _OPERATION_RISK: dict[str, RiskLevel] = {
-    "read":    RiskLevel.LOW,       # get_, fetch_, search_, list_, query_
-    "write":   RiskLevel.MEDIUM,    # write_, save_, create_, update_, upload_
-    "exec":    RiskLevel.HIGH,      # execute_, run_, send_, trigger_
-    "network": RiskLevel.HIGH,      # http_, api_, webhook_
-    "delete":  RiskLevel.CRITICAL,  # delete_, remove_, drop_, destroy_
-    "unknown": RiskLevel.MEDIUM,    # conservative default for unrecognized verbs
+    "read": RiskLevel.LOW,  # get_, fetch_, search_, list_, query_
+    "write": RiskLevel.MEDIUM,  # write_, save_, create_, update_, upload_
+    "exec": RiskLevel.HIGH,  # execute_, run_, send_, trigger_
+    "network": RiskLevel.HIGH,  # http_, api_, webhook_
+    "delete": RiskLevel.CRITICAL,  # delete_, remove_, drop_, destroy_
+    "unknown": RiskLevel.MEDIUM,  # conservative default for unrecognized verbs
 }
 
 
@@ -88,31 +90,31 @@ _OPERATION_RISK: dict[str, RiskLevel] = {
 _CRITICAL_NAMES: tuple[re.Pattern[str], ...] = tuple(
     re.compile(p, re.IGNORECASE)
     for p in (
-        r"transfer_funds",   # financial transactions
-        r"execute_shell",    # arbitrary shell access
-        r"run_command",      # arbitrary command execution
-        r"shell_exec",       # shell execution variant
-        r"eval_code",        # dynamic code evaluation
-        r"database_drop",    # schema destruction
-        r"truncate_table",   # data destruction
+        r"transfer_funds",  # financial transactions
+        r"execute_shell",  # arbitrary shell access
+        r"run_command",  # arbitrary command execution
+        r"shell_exec",  # shell execution variant
+        r"eval_code",  # dynamic code evaluation
+        r"database_drop",  # schema destruction
+        r"truncate_table",  # data destruction
     )
 )
 
 _HIGH_NAMES: tuple[re.Pattern[str], ...] = tuple(
     re.compile(p, re.IGNORECASE)
     for p in (
-        r"send_email",          # external communication
-        r"send_message",        # external communication
-        r"send_notification",   # external communication
-        r"deploy",              # infrastructure changes
-        r"publish",             # public-facing changes
-        r"execute_code",        # code execution
-        r"run_script",          # script execution
-        r"api_call",            # external API side effects
-        r"webhook",             # external webhook triggers
-        r"file_write",          # filesystem mutation
-        r"database_write",      # database mutation
-        r"grant_access",        # permission escalation
+        r"send_email",  # external communication
+        r"send_message",  # external communication
+        r"send_notification",  # external communication
+        r"deploy",  # infrastructure changes
+        r"publish",  # public-facing changes
+        r"execute_code",  # code execution
+        r"run_script",  # script execution
+        r"api_call",  # external API side effects
+        r"webhook",  # external webhook triggers
+        r"file_write",  # filesystem mutation
+        r"database_write",  # database mutation
+        r"grant_access",  # permission escalation
         r"modify_permissions",  # permission changes
     )
 )
@@ -129,20 +131,21 @@ _HIGH_NAMES: tuple[re.Pattern[str], ...] = tuple(
 SENSITIVE_RESOURCE_PATTERNS: tuple[re.Pattern[str], ...] = tuple(
     re.compile(p, re.IGNORECASE)
     for p in (
-        r"\.env\b",            # environment files
-        r"\.key\b",            # key files
-        r"\.pem\b",            # certificate files
-        r"secret",             # secrets in any position
-        r"credential",         # credentials
-        r"password",           # passwords
-        r"private[_\-]?key",   # private keys
-        r"token",              # auth tokens
-        r"api[_\-]?key",       # API keys
+        r"\.env\b",  # environment files
+        r"\.key\b",  # key files
+        r"\.pem\b",  # certificate files
+        r"secret",  # secrets in any position
+        r"credential",  # credentials
+        r"password",  # passwords
+        r"private[_\-]?key",  # private keys
+        r"token",  # auth tokens
+        r"api[_\-]?key",  # API keys
     )
 )
 
 
 # ── Classifier ───────────────────────────────────────────────
+
 
 def classify_risk(candidate: "ToolCandidate") -> RiskLevel:
     """Classify a tool candidate's risk level.
@@ -179,9 +182,11 @@ def classify_risk(candidate: "ToolCandidate") -> RiskLevel:
 
     # Layer 3: escalate if resource touches sensitive patterns
     for pattern in SENSITIVE_RESOURCE_PATTERNS:
-        if (pattern.search(name)
-                or pattern.search(candidate.resource_guess)
-                or pattern.search(candidate.scope_suggestion)):
+        if (
+            pattern.search(name)
+            or pattern.search(candidate.resource_guess)
+            or pattern.search(candidate.scope_suggestion)
+        ):
             risk = max(risk, RiskLevel.HIGH)
             break
 

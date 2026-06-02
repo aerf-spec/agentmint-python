@@ -10,6 +10,7 @@ Architecture:
   Adding a new framework = write a Detector class + register it.
   You never touch triage logic.
 """
+
 from __future__ import annotations
 
 import os
@@ -26,6 +27,7 @@ from .candidates import ToolCandidate
 # ═══════════════════════════════════════════════════════════════
 # CST helpers
 # ═══════════════════════════════════════════════════════════════
+
 
 def _decorator_name(dec: cst.Decorator) -> Optional[str]:
     node = dec.decorator
@@ -96,6 +98,7 @@ def _has_docstring(node: cst.FunctionDef) -> bool:
 # ═══════════════════════════════════════════════════════════════
 # Import analysis (single pass, used by all detectors)
 # ═══════════════════════════════════════════════════════════════
+
 
 @dataclass
 class ImportInfo:
@@ -173,8 +176,10 @@ class ImportCollector(cst.CSTVisitor):
 # Detectors — each one ALWAYS runs, emits candidates with evidence
 # ═══════════════════════════════════════════════════════════════
 
+
 class LangGraphDetector(cst.CSTVisitor):
     """@tool (from langgraph/langchain), ToolNode([...])"""
+
     METADATA_DEPENDENCIES = (PositionProvider,)
     FRAMEWORK = "langgraph"
     TOOL_MODULES = {"langgraph.prebuilt", "langchain_core.tools", "langchain.tools"}
@@ -192,39 +197,51 @@ class LangGraphDetector(cst.CSTVisitor):
     def visit_FunctionDef(self, node: cst.FunctionDef) -> None:
         for dec in node.decorators:
             if _decorator_name(dec) == "tool":
-                self.candidates.append(ToolCandidate(
-                    file=self.file_path, line=self._line(node),
-                    framework=self.FRAMEWORK, symbol=node.name.value,
-                    boundary="definition",
-                    confidence="high" if self._import_confirmed else "low",
-                    detection_rule="@tool",
-                ))
+                self.candidates.append(
+                    ToolCandidate(
+                        file=self.file_path,
+                        line=self._line(node),
+                        framework=self.FRAMEWORK,
+                        symbol=node.name.value,
+                        boundary="definition",
+                        confidence="high" if self._import_confirmed else "low",
+                        detection_rule="@tool",
+                    )
+                )
 
     def visit_Call(self, node: cst.Call) -> None:
         if _call_name(node) != "ToolNode":
             return
-        confirmed = (
-            self.imports.name_comes_from("ToolNode", {"langgraph.prebuilt"})
-            or self.imports.has_module_prefix("langgraph")
-        )
+        confirmed = self.imports.name_comes_from(
+            "ToolNode", {"langgraph.prebuilt"}
+        ) or self.imports.has_module_prefix("langgraph")
         if node.args:
             names = _list_names(node.args[0].value)
             line = self._line(node)
             for name in names:
-                self.candidates.append(ToolCandidate(
-                    file=self.file_path, line=line,
-                    framework=self.FRAMEWORK, symbol=name,
-                    boundary="registration",
-                    confidence="high" if confirmed else "medium",
-                    detection_rule="ToolNode([...])",
-                ))
+                self.candidates.append(
+                    ToolCandidate(
+                        file=self.file_path,
+                        line=line,
+                        framework=self.FRAMEWORK,
+                        symbol=name,
+                        boundary="registration",
+                        confidence="high" if confirmed else "medium",
+                        detection_rule="ToolNode([...])",
+                    )
+                )
             if not names:
-                self.candidates.append(ToolCandidate(
-                    file=self.file_path, line=line,
-                    framework=self.FRAMEWORK, symbol="<dynamic>",
-                    boundary="registration", confidence="low",
-                    detection_rule="ToolNode(<dynamic>)",
-                ))
+                self.candidates.append(
+                    ToolCandidate(
+                        file=self.file_path,
+                        line=line,
+                        framework=self.FRAMEWORK,
+                        symbol="<dynamic>",
+                        boundary="registration",
+                        confidence="low",
+                        detection_rule="ToolNode(<dynamic>)",
+                    )
+                )
 
     def _line(self, node) -> int:
         try:
@@ -235,6 +252,7 @@ class LangGraphDetector(cst.CSTVisitor):
 
 class OpenAIAgentsDetector(cst.CSTVisitor):
     """@function_tool, Agent(tools=[...]) from openai agents SDK"""
+
     METADATA_DEPENDENCIES = (PositionProvider,)
     FRAMEWORK = "openai-sdk"
 
@@ -251,13 +269,17 @@ class OpenAIAgentsDetector(cst.CSTVisitor):
     def visit_FunctionDef(self, node: cst.FunctionDef) -> None:
         for dec in node.decorators:
             if _decorator_name(dec) == "function_tool":
-                self.candidates.append(ToolCandidate(
-                    file=self.file_path, line=self._line(node),
-                    framework=self.FRAMEWORK, symbol=node.name.value,
-                    boundary="definition",
-                    confidence="high" if self._import_confirmed else "medium",
-                    detection_rule="@function_tool",
-                ))
+                self.candidates.append(
+                    ToolCandidate(
+                        file=self.file_path,
+                        line=self._line(node),
+                        framework=self.FRAMEWORK,
+                        symbol=node.name.value,
+                        boundary="definition",
+                        confidence="high" if self._import_confirmed else "medium",
+                        detection_rule="@function_tool",
+                    )
+                )
 
     def visit_Call(self, node: cst.Call) -> None:
         cn = _call_name(node)
@@ -267,13 +289,17 @@ class OpenAIAgentsDetector(cst.CSTVisitor):
             if node.args:
                 a = node.args[0].value
                 if isinstance(a, cst.Name):
-                    self.candidates.append(ToolCandidate(
-                        file=self.file_path, line=self._line(node),
-                        framework=self.FRAMEWORK, symbol=a.value,
-                        boundary="registration",
-                        confidence="high" if self._import_confirmed else "medium",
-                        detection_rule="function_tool()",
-                    ))
+                    self.candidates.append(
+                        ToolCandidate(
+                            file=self.file_path,
+                            line=self._line(node),
+                            framework=self.FRAMEWORK,
+                            symbol=a.value,
+                            boundary="registration",
+                            confidence="high" if self._import_confirmed else "medium",
+                            detection_rule="function_tool()",
+                        )
+                    )
 
     def _extract_tools_kwarg(self, node: cst.Call, ctx: str) -> None:
         for arg in node.args:
@@ -282,19 +308,29 @@ class OpenAIAgentsDetector(cst.CSTVisitor):
                 line = self._line(node)
                 confidence = "high" if self._import_confirmed else "medium"
                 for name in names:
-                    self.candidates.append(ToolCandidate(
-                        file=self.file_path, line=line,
-                        framework=self.FRAMEWORK, symbol=name,
-                        boundary="registration", confidence=confidence,
-                        detection_rule="tools=[...]",
-                    ))
+                    self.candidates.append(
+                        ToolCandidate(
+                            file=self.file_path,
+                            line=line,
+                            framework=self.FRAMEWORK,
+                            symbol=name,
+                            boundary="registration",
+                            confidence=confidence,
+                            detection_rule="tools=[...]",
+                        )
+                    )
                 if not names:
-                    self.candidates.append(ToolCandidate(
-                        file=self.file_path, line=line,
-                        framework=self.FRAMEWORK, symbol="<dynamic>",
-                        boundary="registration", confidence="low",
-                        detection_rule=f"{ctx}(tools=<dynamic>)",
-                    ))
+                    self.candidates.append(
+                        ToolCandidate(
+                            file=self.file_path,
+                            line=line,
+                            framework=self.FRAMEWORK,
+                            symbol="<dynamic>",
+                            boundary="registration",
+                            confidence="low",
+                            detection_rule=f"{ctx}(tools=<dynamic>)",
+                        )
+                    )
 
     def _line(self, node) -> int:
         try:
@@ -306,6 +342,7 @@ class OpenAIAgentsDetector(cst.CSTVisitor):
 class CrewAIDetector(cst.CSTVisitor):
     """@tool (from crewai), BaseTool subclasses, Agent/Task(tools=[...]),
     @before_tool_call gates"""
+
     METADATA_DEPENDENCIES = (PositionProvider,)
     FRAMEWORK = "crewai"
     BASETOOL_NAMES = {"BaseTool", "StructuredTool"}
@@ -320,23 +357,32 @@ class CrewAIDetector(cst.CSTVisitor):
         for dec in node.decorators:
             dn = _decorator_name(dec)
             if dn == "tool":
-                self.candidates.append(ToolCandidate(
-                    file=self.file_path, line=self._line(node),
-                    framework=self.FRAMEWORK, symbol=node.name.value,
-                    boundary="definition",
-                    confidence="high" if self._import_confirmed else "low",
-                    detection_rule="@tool",
-                ))
+                self.candidates.append(
+                    ToolCandidate(
+                        file=self.file_path,
+                        line=self._line(node),
+                        framework=self.FRAMEWORK,
+                        symbol=node.name.value,
+                        boundary="definition",
+                        confidence="high" if self._import_confirmed else "low",
+                        detection_rule="@tool",
+                    )
+                )
             elif dn == "before_tool_call":
-                self.candidates.append(ToolCandidate(
-                    file=self.file_path, line=self._line(node),
-                    framework=self.FRAMEWORK, symbol=node.name.value,
-                    boundary="definition",
-                    confidence="high" if self._import_confirmed else "medium",
-                    detection_rule="@before_tool_call (gate)",
-                    operation_guess="gate", resource_guess="hook",
-                    scope_suggestion="hook:before_tool_call",
-                ))
+                self.candidates.append(
+                    ToolCandidate(
+                        file=self.file_path,
+                        line=self._line(node),
+                        framework=self.FRAMEWORK,
+                        symbol=node.name.value,
+                        boundary="definition",
+                        confidence="high" if self._import_confirmed else "medium",
+                        detection_rule="@before_tool_call (gate)",
+                        operation_guess="gate",
+                        resource_guess="hook",
+                        scope_suggestion="hook:before_tool_call",
+                    )
+                )
 
     def visit_ClassDef(self, node: cst.ClassDef) -> None:
         bases = _base_class_names(node.bases)
@@ -348,14 +394,18 @@ class CrewAIDetector(cst.CSTVisitor):
                 if isinstance(stmt, cst.FunctionDef) and stmt.name.value == "_run":
                     has_run = True
                     break
-        self.candidates.append(ToolCandidate(
-            file=self.file_path, line=self._line(node),
-            framework=self.FRAMEWORK, symbol=node.name.value,
-            boundary="definition",
-            confidence="high" if has_run else "medium",
-            detection_rule="BaseTool subclass",
-            base_classes=bases,
-        ))
+        self.candidates.append(
+            ToolCandidate(
+                file=self.file_path,
+                line=self._line(node),
+                framework=self.FRAMEWORK,
+                symbol=node.name.value,
+                boundary="definition",
+                confidence="high" if has_run else "medium",
+                detection_rule="BaseTool subclass",
+                base_classes=bases,
+            )
+        )
 
     def visit_Call(self, node: cst.Call) -> None:
         cn = _call_name(node)
@@ -367,12 +417,17 @@ class CrewAIDetector(cst.CSTVisitor):
                 line = self._line(node)
                 confidence = "high" if self._import_confirmed else "medium"
                 for name in names:
-                    self.candidates.append(ToolCandidate(
-                        file=self.file_path, line=line,
-                        framework=self.FRAMEWORK, symbol=name,
-                        boundary="registration", confidence=confidence,
-                        detection_rule=f"{cn}(tools=[...])",
-                    ))
+                    self.candidates.append(
+                        ToolCandidate(
+                            file=self.file_path,
+                            line=line,
+                            framework=self.FRAMEWORK,
+                            symbol=name,
+                            boundary="registration",
+                            confidence=confidence,
+                            detection_rule=f"{cn}(tools=[...])",
+                        )
+                    )
 
     def _line(self, node) -> int:
         try:
@@ -381,9 +436,9 @@ class CrewAIDetector(cst.CSTVisitor):
             return 0
 
 
-
 class MCPDetector(cst.CSTVisitor):
     """@server.tool() decorators on async functions in MCP servers."""
+
     METADATA_DEPENDENCIES = (PositionProvider,)
     FRAMEWORK = "mcp"
 
@@ -391,9 +446,8 @@ class MCPDetector(cst.CSTVisitor):
         self.file_path = file_path
         self.imports = imports
         self.candidates: List[ToolCandidate] = []
-        self._import_confirmed = (
-            imports.has_module_prefix("mcp")
-            or imports.has_module_prefix("fastmcp")
+        self._import_confirmed = imports.has_module_prefix("mcp") or imports.has_module_prefix(
+            "fastmcp"
         )
 
     def visit_FunctionDef(self, node: cst.FunctionDef) -> None:
@@ -406,13 +460,17 @@ class MCPDetector(cst.CSTVisitor):
                 if isinstance(raw, cst.Call):
                     raw = raw.func
                 if isinstance(raw, cst.Attribute):
-                    self.candidates.append(ToolCandidate(
-                        file=self.file_path, line=self._line(node),
-                        framework=self.FRAMEWORK, symbol=node.name.value,
-                        boundary="definition",
-                        confidence="high" if self._import_confirmed else "medium",
-                        detection_rule="@server.tool()",
-                    ))
+                    self.candidates.append(
+                        ToolCandidate(
+                            file=self.file_path,
+                            line=self._line(node),
+                            framework=self.FRAMEWORK,
+                            symbol=node.name.value,
+                            boundary="definition",
+                            confidence="high" if self._import_confirmed else "medium",
+                            detection_rule="@server.tool()",
+                        )
+                    )
 
     def _line(self, node) -> int:
         try:
@@ -420,18 +478,31 @@ class MCPDetector(cst.CSTVisitor):
         except Exception:
             return 0
 
+
 class RawToolDetector(cst.CSTVisitor):
     """Fallback: functions with tool-like name prefixes."""
+
     METADATA_DEPENDENCIES = (PositionProvider,)
     FRAMEWORK = "raw"
     PREFIXES = (
-        "fetch_", "search_", "write_", "delete_", "execute_",
-        "get_", "create_", "update_", "send_", "read_",
-        "query_", "lookup_", "remove_", "upload_", "download_",
+        "fetch_",
+        "search_",
+        "write_",
+        "delete_",
+        "execute_",
+        "get_",
+        "create_",
+        "update_",
+        "send_",
+        "read_",
+        "query_",
+        "lookup_",
+        "remove_",
+        "upload_",
+        "download_",
     )
 
-    def __init__(self, file_path: str, imports: ImportInfo,
-                 seen: Optional[Set[str]] = None):
+    def __init__(self, file_path: str, imports: ImportInfo, seen: Optional[Set[str]] = None):
         self.file_path = file_path
         self.imports = imports
         self.candidates: List[ToolCandidate] = []
@@ -443,13 +514,17 @@ class RawToolDetector(cst.CSTVisitor):
             return
         if not any(name.startswith(p) for p in self.PREFIXES):
             return
-        self.candidates.append(ToolCandidate(
-            file=self.file_path, line=self._line(node),
-            framework=self.FRAMEWORK, symbol=name,
-            boundary="definition",
-            confidence="medium" if _has_docstring(node) else "low",
-            detection_rule="name heuristic",
-        ))
+        self.candidates.append(
+            ToolCandidate(
+                file=self.file_path,
+                line=self._line(node),
+                framework=self.FRAMEWORK,
+                symbol=name,
+                boundary="definition",
+                confidence="medium" if _has_docstring(node) else "low",
+                detection_rule="name heuristic",
+            )
+        )
 
     def _line(self, node) -> int:
         try:
@@ -516,16 +591,30 @@ def _triage(candidates: List[ToolCandidate]) -> List[ToolCandidate]:
 # ═══════════════════════════════════════════════════════════════
 
 SKIP_DIRS = {
-    "venv", ".venv", "env", ".env", ".git", ".hg", ".svn",
-    "__pycache__", ".mypy_cache", ".pytest_cache", ".ruff_cache",
-    "node_modules", "alembic", "migrations", ".tox", ".nox",
-    "dist", "build",
+    "venv",
+    ".venv",
+    "env",
+    ".env",
+    ".git",
+    ".hg",
+    ".svn",
+    "__pycache__",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    "node_modules",
+    "alembic",
+    "migrations",
+    ".tox",
+    ".nox",
+    "dist",
+    "build",
 }
 
 
-def _run_detector(tree: cst.Module, detector_cls: type,
-                  file_path: str, imports: ImportInfo,
-                  **kwargs) -> List[ToolCandidate]:
+def _run_detector(
+    tree: cst.Module, detector_cls: type, file_path: str, imports: ImportInfo, **kwargs
+) -> List[ToolCandidate]:
     """Run a single detector. Uses MetadataWrapper for line numbers,
     falls back to plain walk() if it fails."""
     det = detector_cls(file_path, imports, **kwargs)
@@ -575,8 +664,7 @@ def scan_directory(root: str, skip_tests: bool = True) -> List[ToolCandidate]:
 
     all_cands = []
     for dirpath, dirnames, filenames in os.walk(root_path):
-        dirnames[:] = [d for d in dirnames
-                       if d not in skip and not d.endswith(".egg-info")]
+        dirnames[:] = [d for d in dirnames if d not in skip and not d.endswith(".egg-info")]
         for fname in filenames:
             if not fname.endswith(".py"):
                 continue

@@ -24,6 +24,7 @@ Output formats:
     - Plain text — when Rich is not installed
     - JSON — via scorecard.to_dict() for machine consumption
 """
+
 from __future__ import annotations
 
 import json
@@ -67,6 +68,7 @@ def _format_frameworks(tools: list[ToolCandidate]) -> str:
 
 # ── Section result ───────────────────────────────────────────
 
+
 @dataclass(frozen=True)
 class SectionResult:
     """Coverage result for one OWASP cheat sheet section.
@@ -74,12 +76,12 @@ class SectionResult:
     Frozen — safe to store, compare, and serialize after creation.
     """
 
-    number: int           # 1-8
-    name: str             # e.g. "Tool Security & Least Privilege"
-    covered: bool         # True if AgentMint addresses this section
-    out_of_scope: bool    # True for §2 — explicitly not our job
-    detail: str           # one-line summary of what we found/did
-    evidence: str         # concrete numbers from the scan
+    number: int  # 1-8
+    name: str  # e.g. "Tool Security & Least Privilege"
+    covered: bool  # True if AgentMint addresses this section
+    out_of_scope: bool  # True for §2 — explicitly not our job
+    detail: str  # one-line summary of what we found/did
+    evidence: str  # concrete numbers from the scan
 
     @property
     def icon(self) -> str:
@@ -99,6 +101,7 @@ class SectionResult:
 
 
 # ── Scorecard container ──────────────────────────────────────
+
 
 class OWASPScorecard:
     """Complete OWASP AI Agent Security coverage report.
@@ -158,6 +161,7 @@ class OWASPScorecard:
 
 # ── Scorecard builder ────────────────────────────────────────
 
+
 def build_scorecard(
     tools: list[ToolCandidate],
     memory_stores: Optional[list[MemoryCandidate]] = None,
@@ -197,14 +201,15 @@ def build_scorecard(
             out_of_scope=False,
             detail=(
                 "Detects unprotected tools, scoped allow/deny, signed enforcement"
-                if n_tools > 0 else "No tools detected"
+                if n_tools > 0
+                else "No tools detected"
             ),
             evidence=(
                 f"{n_tools} tools across {fw_str}"
-                if n_tools > 0 else "Run on an agent codebase to scan"
+                if n_tools > 0
+                else "Run on an agent codebase to scan"
             ),
         ),
-
         # §2 Prompt Injection Defense — explicitly out of scope
         SectionResult(
             number=2,
@@ -214,7 +219,6 @@ def build_scorecard(
             detail="Out of scope — AgentMint secures the tool boundary, not the prompt boundary",
             evidence="See OWASP LLM Prompt Injection Prevention Cheat Sheet",
         ),
-
         # §3 Memory & Context Security
         SectionResult(
             number=3,
@@ -232,7 +236,6 @@ def build_scorecard(
                 else "shield.py provides PII pattern detection"
             ),
         ),
-
         # §4 Human-in-the-Loop Controls
         SectionResult(
             number=4,
@@ -241,7 +244,8 @@ def build_scorecard(
             out_of_scope=False,
             detail=(
                 "Risk-classified tool calls, approval gates for HIGH/CRITICAL"
-                if n_tools > 0 else "No tools to classify"
+                if n_tools > 0
+                else "No tools to classify"
             ),
             evidence=(
                 f"{n_critical} CRITICAL, {n_high} HIGH require approval"
@@ -249,7 +253,6 @@ def build_scorecard(
                 else f"{n_tools} tools classified, all LOW/MEDIUM"
             ),
         ),
-
         # §5 Output Validation & Guardrails
         SectionResult(
             number=5,
@@ -259,7 +262,6 @@ def build_scorecard(
             detail="Shield scans tool I/O, circuit breaker rate-limits agents",
             evidence="23 patterns (PII, secrets, injection) + sliding window limiter",
         ),
-
         # §6 Monitoring & Observability
         SectionResult(
             number=6,
@@ -269,7 +271,6 @@ def build_scorecard(
             detail="Signed receipts, hash-chained audit trails, VERIFY.sh",
             evidence="Ed25519 receipts, SHA-256 chains, exportable evidence packages",
         ),
-
         # §7 Multi-Agent Security
         SectionResult(
             number=7,
@@ -279,7 +280,6 @@ def build_scorecard(
             detail="Scoped delegation, child plans can't exceed parent, Merkle trees",
             evidence="Ed25519 per-plan signing, scope intersection, session Merkle root",
         ),
-
         # §8 Data Protection & Privacy
         SectionResult(
             number=8,
@@ -296,10 +296,12 @@ def build_scorecard(
 
 # ── Terminal output ──────────────────────────────────────────
 
+
 def print_scorecard(scorecard: OWASPScorecard) -> None:
     """Print the OWASP scorecard. Rich if available, plain text otherwise."""
     try:
         from rich.console import Console  # noqa: F401
+
         _print_rich(scorecard)
     except ImportError:
         _print_plain(scorecard)
@@ -315,8 +317,8 @@ def _print_rich(scorecard: OWASPScorecard) -> None:
     console.print()
 
     table = Table(show_header=False, box=None, padding=(0, 2), expand=True)
-    table.add_column(width=4)       # icon
-    table.add_column(width=6)       # §N
+    table.add_column(width=4)  # icon
+    table.add_column(width=6)  # §N
     table.add_column(min_width=30)  # name + detail
     table.add_column(min_width=20)  # evidence
 
@@ -327,38 +329,31 @@ def _print_rich(scorecard: OWASPScorecard) -> None:
 
         # Name and detail — styled by coverage status
         if s.out_of_scope:
-            name_detail = (
-                f"[#64748B]{s.name}[/#64748B]\n"
-                f"[#64748B]{s.detail}[/#64748B]"
-            )
+            name_detail = f"[#64748B]{s.name}[/#64748B]\n[#64748B]{s.detail}[/#64748B]"
         elif s.covered:
-            name_detail = (
-                f"[bold #E2E8F0]{s.name}[/bold #E2E8F0]\n"
-                f"[#94A3B8]{s.detail}[/#94A3B8]"
-            )
+            name_detail = f"[bold #E2E8F0]{s.name}[/bold #E2E8F0]\n[#94A3B8]{s.detail}[/#94A3B8]"
         else:
-            name_detail = (
-                f"[#FBBF24]{s.name}[/#FBBF24]\n"
-                f"[#FBBF24]{s.detail}[/#FBBF24]"
-            )
+            name_detail = f"[#FBBF24]{s.name}[/#FBBF24]\n[#FBBF24]{s.detail}[/#FBBF24]"
 
         evidence = f"[#64748B]{s.evidence}[/#64748B]"
         table.add_row(s.rich_icon, num, name_detail, evidence)
 
-    console.print(Panel(
-        table,
-        title="[bold #3B82F6]OWASP AI Agent Security Coverage[/bold #3B82F6]",
-        title_align="left",
-        border_style="#3B82F6",
-        padding=(1, 2),
-        subtitle=(
-            f"[#64748B]{scorecard.covered_count}/{len(scorecard.sections)} sections"
-            f" · §2 out of scope"
-            f" · {scorecard.total_tools} tools"
-            f" · {scorecard.scan_ms:.0f}ms[/#64748B]"
-        ),
-        subtitle_align="right",
-    ))
+    console.print(
+        Panel(
+            table,
+            title="[bold #3B82F6]OWASP AI Agent Security Coverage[/bold #3B82F6]",
+            title_align="left",
+            border_style="#3B82F6",
+            padding=(1, 2),
+            subtitle=(
+                f"[#64748B]{scorecard.covered_count}/{len(scorecard.sections)} sections"
+                f" · §2 out of scope"
+                f" · {scorecard.total_tools} tools"
+                f" · {scorecard.scan_ms:.0f}ms[/#64748B]"
+            ),
+            subtitle_align="right",
+        )
+    )
     console.print()
 
 

@@ -30,6 +30,7 @@ Example:
     >>> classify_dict({"query": "patient SSN is 123-45-6789"})
     Classification(level=RESTRICTED, flags=[("query", "ssn", RESTRICTED)])
 """
+
 from __future__ import annotations
 
 import re
@@ -40,6 +41,7 @@ __all__ = ["DataLevel", "Classification", "classify_data", "classify_dict"]
 
 
 # ── Sensitivity levels ───────────────────────────────────────
+
 
 class DataLevel(IntEnum):
     """Ordered data sensitivity. Higher = more sensitive.
@@ -60,6 +62,7 @@ class DataLevel(IntEnum):
 
 
 # ── Classification result ────────────────────────────────────
+
 
 class Classification:
     """Result of classifying a dict of tool call data.
@@ -95,8 +98,7 @@ class Classification:
         }
         if self.flags:
             result["flags"] = [
-                {"field": f, "pattern": p, "level": lv.label}
-                for f, p, lv in self.flags
+                {"field": f, "pattern": p, "level": lv.label} for f, p, lv in self.flags
             ]
         return result
 
@@ -120,65 +122,59 @@ class Classification:
 # patterns are checked and the highest matching level wins.
 
 _PATTERNS: tuple[tuple[str, DataLevel, re.Pattern[str]], ...] = (
-
     # ── RESTRICTED: PII and credentials ──────────────────────
     # Detection of these triggers risk auto-escalation to CRITICAL.
-
-    ("ssn", DataLevel.RESTRICTED,
-     re.compile(r"\b\d{3}-\d{2}-\d{4}\b")),
-
-    ("credit_card", DataLevel.RESTRICTED,
-     re.compile(r"\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b")),
-
-    ("passport", DataLevel.RESTRICTED,
-     re.compile(r"\b[A-Z]{1,2}\d{6,9}\b")),
-
-    ("health_data", DataLevel.RESTRICTED,
-     re.compile(
-         r"(?i)\b(?:diagnosis|prescription|patient\s*id"
-         r"|medical\s*record|hipaa)\b"
-     )),
-
-    ("private_key", DataLevel.RESTRICTED,
-     re.compile(
-         r"-----BEGIN\s+(?:RSA\s+|EC\s+|DSA\s+|OPENSSH\s+)?"
-         r"PRIVATE\s+KEY-----"
-     )),
-
-    ("aws_access_key", DataLevel.RESTRICTED,
-     re.compile(r"\bAKIA[0-9A-Z]{16}\b")),
-
+    ("ssn", DataLevel.RESTRICTED, re.compile(r"\b\d{3}-\d{2}-\d{4}\b")),
+    (
+        "credit_card",
+        DataLevel.RESTRICTED,
+        re.compile(r"\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b"),
+    ),
+    ("passport", DataLevel.RESTRICTED, re.compile(r"\b[A-Z]{1,2}\d{6,9}\b")),
+    (
+        "health_data",
+        DataLevel.RESTRICTED,
+        re.compile(r"(?i)\b(?:diagnosis|prescription|patient\s*id" r"|medical\s*record|hipaa)\b"),
+    ),
+    (
+        "private_key",
+        DataLevel.RESTRICTED,
+        re.compile(r"-----BEGIN\s+(?:RSA\s+|EC\s+|DSA\s+|OPENSSH\s+)?" r"PRIVATE\s+KEY-----"),
+    ),
+    ("aws_access_key", DataLevel.RESTRICTED, re.compile(r"\bAKIA[0-9A-Z]{16}\b")),
     # ── CONFIDENTIAL: sensitive business data ────────────────
-
-    ("salary_data", DataLevel.CONFIDENTIAL,
-     re.compile(r"(?i)\b(?:salary|compensation|bonus|stock\s*options?)\b")),
-
-    ("api_key_value", DataLevel.CONFIDENTIAL,
-     re.compile(
-         r"(?i)(?:api[_\-]?key|secret[_\-]?key|auth[_\-]?token)"
-         r"[\s:=\"']+\S{8,}"
-     )),
-
-    ("password_field", DataLevel.CONFIDENTIAL,
-     re.compile(r"(?i)password\s*[:=]\s*\S+")),
-
-    ("confidential_marker", DataLevel.CONFIDENTIAL,
-     re.compile(
-         r"(?i)\b(?:confidential|internal\s+only"
-         r"|do\s+not\s+distribute)\b"
-     )),
-
+    (
+        "salary_data",
+        DataLevel.CONFIDENTIAL,
+        re.compile(r"(?i)\b(?:salary|compensation|bonus|stock\s*options?)\b"),
+    ),
+    (
+        "api_key_value",
+        DataLevel.CONFIDENTIAL,
+        re.compile(r"(?i)(?:api[_\-]?key|secret[_\-]?key|auth[_\-]?token)" r"[\s:=\"']+\S{8,}"),
+    ),
+    ("password_field", DataLevel.CONFIDENTIAL, re.compile(r"(?i)password\s*[:=]\s*\S+")),
+    (
+        "confidential_marker",
+        DataLevel.CONFIDENTIAL,
+        re.compile(r"(?i)\b(?:confidential|internal\s+only" r"|do\s+not\s+distribute)\b"),
+    ),
     # ── INTERNAL: company data ───────────────────────────────
-
-    ("internal_email", DataLevel.INTERNAL,
-     re.compile(r"\b[A-Za-z0-9._%+-]+@(?:company|corp|internal)\.\w+\b")),
-
-    ("draft_marker", DataLevel.INTERNAL,
-     re.compile(r"(?i)\b(?:draft|not\s+for\s+(?:distribution|external))\b")),
+    (
+        "internal_email",
+        DataLevel.INTERNAL,
+        re.compile(r"\b[A-Za-z0-9._%+-]+@(?:company|corp|internal)\.\w+\b"),
+    ),
+    (
+        "draft_marker",
+        DataLevel.INTERNAL,
+        re.compile(r"(?i)\b(?:draft|not\s+for\s+(?:distribution|external))\b"),
+    ),
 )
 
 
 # ── Field walker ─────────────────────────────────────────────
+
 
 def _walk_strings(data: Any, prefix: str = "") -> Iterator[tuple[str, str]]:
     """Yield (field_path, string_value) from nested dicts/lists.
@@ -198,6 +194,7 @@ def _walk_strings(data: Any, prefix: str = "") -> Iterator[tuple[str, str]]:
 
 
 # ── Public API ───────────────────────────────────────────────
+
 
 def classify_data(text: str) -> DataLevel:
     """Classify a single string. Returns the highest matching level.

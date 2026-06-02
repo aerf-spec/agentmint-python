@@ -1,0 +1,57 @@
+name: AERF Conformance
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate-receipts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install validator
+        run: python -m pip install --upgrade jsonschema
+      - name: Fetch AERF schema
+        run: |
+          mkdir -p schemas
+          curl -fsSL https://raw.githubusercontent.com/aerf-spec/aerf/main/schemas/aerf-v0.1.json \
+            -o schemas/aerf-v0.1.json
+      - name: Validate committed receipts
+        run: |
+          python - <<'PY'
+          import glob
+          import json
+          import sys
+          from pathlib import Path
+
+          from jsonschema import Draft202012Validator, FormatChecker
+
+          schema = json.loads(Path("schemas/aerf-v0.1.json").read_text())
+          validator = Draft202012Validator(schema, format_checker=FormatChecker())
+          files = sorted(
+              glob.glob("examples/*/sample_output/receipts/*.json")
+              + glob.glob("examples/*/receipts/*.json")
+          )
+          if not files:
+              print("No committed example receipts found.")
+              raise SystemExit(0)
+
+          failed = False
+          for path in files:
+              receipt = json.loads(Path(path).read_text())
+              errors = sorted(validator.iter_errors(receipt), key=lambda error: list(error.path))
+              if errors:
+                  failed = True
+                  print(f"FAIL {path}")
+                  for error in errors:
+                      print(f"  {error.json_path}: {error.message}")
+              else:
+                  print(f"PASS {path}")
+
+          if failed:
+              print("AERF drift detected. This is expected for the foundation PR.")
+          raise SystemExit(0)
+          PY

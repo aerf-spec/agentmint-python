@@ -30,7 +30,7 @@ def pem_wrap(raw_public_key: bytes, label: str = "PUBLIC KEY") -> str:
     """
     der = _SPKI_PREFIX + raw_public_key
     b64 = base64.b64encode(der).decode()
-    lines = [b64[i:i + 64] for i in range(0, len(b64), 64)]
+    lines = [b64[i : i + 64] for i in range(0, len(b64), 64)]
     return f"-----BEGIN {label}-----\n" + "\n".join(lines) + f"\n-----END {label}-----\n"
 
 

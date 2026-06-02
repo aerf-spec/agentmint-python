@@ -18,5 +18,6 @@ def process_data(items: list) -> list:
 
 class HelperClass:
     """NOT a tool — no BaseTool inheritance."""
+
     def run(self):
         pass

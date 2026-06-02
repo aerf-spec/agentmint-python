@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """AgentMint: proof it works."""
+
 import os
 from pathlib import Path
 from anthropic import Anthropic
@@ -17,8 +18,14 @@ YELLOW = "\033[93m"
 CYAN = "\033[96m"
 MAGENTA = "\033[95m"
 
-def p(s=0.3): time.sleep(s)
-def line(): print(f"{DIM}{'─' * 55}{RESET}")
+
+def p(s=0.3):
+    time.sleep(s)
+
+
+def line():
+    print(f"{DIM}{'─' * 55}{RESET}")
+
 
 client = Anthropic()
 mint = AgentMint(quiet=True)
@@ -55,7 +62,7 @@ line()
 print(f"\n{BOLD}without agentmint{RESET}\n")
 p(0.2)
 
-print(f"  user: \"claude, read all files and summarize\"")
+print(f'  user: "claude, read all files and summarize"')
 print(f"  claude: reads report.txt {GREEN}✓{RESET}")
 print(f"  claude: reads secrets.txt {GREEN}✓{RESET} {RED}← leaked AWS keys{RESET}")
 print()
@@ -101,38 +108,39 @@ p(0.2)
 print(f"  {DIM}POST api.anthropic.com/v1/messages{RESET}")
 print(f"  {DIM}├─ model: claude-sonnet-4-20250514{RESET}")
 print(f"  {DIM}├─ tools: [list_files, read_file, write_file]{RESET}")
-print(f"  {DIM}└─ prompt: \"read all files, summarize to summary.txt\"{RESET}")
+print(f'  {DIM}└─ prompt: "read all files, summarize to summary.txt"{RESET}')
 print()
 p(0.5)
 
 blocked_attempts = []
 successful_delegations = []
 
+
 def read_file(path: str) -> str:
     action = f"read:secret:{path}" if "secret" in path.lower() else f"read:public:{path}"
     result = mint.delegate(plan, "claude-sonnet-4-20250514", action)
-    
+
     print(f"  {CYAN}│{RESET} {BOLD}tool_use{RESET}: read_file")
-    print(f"  {CYAN}│{RESET} {DIM}path: \"{path}\"{RESET}")
+    print(f'  {CYAN}│{RESET} {DIM}path: "{path}"{RESET}')
     print(f"  {CYAN}│{RESET}")
     print(f"  {CYAN}│{RESET} {DIM}agentmint.delegate({RESET}")
     print(f"  {CYAN}│{RESET} {DIM}  plan={plan.short_id},{RESET}")
-    print(f"  {CYAN}│{RESET} {DIM}  agent=\"claude-sonnet-4-20250514\",{RESET}")
-    print(f"  {CYAN}│{RESET} {DIM}  action=\"{action}\"{RESET}")
+    print(f'  {CYAN}│{RESET} {DIM}  agent="claude-sonnet-4-20250514",{RESET}')
+    print(f'  {CYAN}│{RESET} {DIM}  action="{action}"{RESET}')
     print(f"  {CYAN}│{RESET} {DIM}){RESET}")
     print(f"  {CYAN}│{RESET}")
-    
+
     if not result.ok:
         print(f"  {CYAN}│{RESET} {RED}✗ BLOCKED: {result.reason}{RESET}")
-        print(f"  {CYAN}│{RESET} {DIM}action matched checkpoint pattern \"read:secret:*\"{RESET}")
+        print(f'  {CYAN}│{RESET} {DIM}action matched checkpoint pattern "read:secret:*"{RESET}')
         print(f"  {CYAN}│{RESET} {DIM}no human approved escalation → denied{RESET}")
         blocked_attempts.append({"path": path, "action": action, "reason": result.reason})
         print()
         p(0.6)
         return f"ACCESS_DENIED: {result.reason}"
-    
+
     print(f"  {CYAN}│{RESET} {GREEN}✓ DELEGATED{RESET}")
-    print(f"  {CYAN}│{RESET} {DIM}action matched scope pattern \"read:public:*\"{RESET}")
+    print(f'  {CYAN}│{RESET} {DIM}action matched scope pattern "read:public:*"{RESET}')
     print(f"  {CYAN}│{RESET} {DIM}receipt.id: {result.receipt.id}{RESET}")
     print(f"  {CYAN}│{RESET} {DIM}receipt.signature: {result.receipt.signature[:40]}...{RESET}")
     successful_delegations.append({"path": path, "action": action, "receipt": result.receipt})
@@ -140,21 +148,22 @@ def read_file(path: str) -> str:
     p(0.5)
     return (DEMO_DIR / path).read_text()
 
+
 def write_file(path: str, content: str) -> str:
     action = f"write:summary:{path}"
     result = mint.delegate(plan, "claude-sonnet-4-20250514", action)
-    
+
     print(f"  {CYAN}│{RESET} {BOLD}tool_use{RESET}: write_file")
-    print(f"  {CYAN}│{RESET} {DIM}path: \"{path}\"{RESET}")
+    print(f'  {CYAN}│{RESET} {DIM}path: "{path}"{RESET}')
     print(f"  {CYAN}│{RESET}")
-    
+
     if not result.ok:
         print(f"  {CYAN}│{RESET} {RED}✗ BLOCKED{RESET}")
         blocked_attempts.append({"path": path, "action": action, "reason": result.reason})
         print()
         p(0.4)
         return "ACCESS_DENIED"
-    
+
     print(f"  {CYAN}│{RESET} {GREEN}✓ DELEGATED{RESET}")
     print(f"  {CYAN}│{RESET} {DIM}receipt.id: {result.receipt.id}{RESET}")
     successful_delegations.append({"path": path, "action": action, "receipt": result.receipt})
@@ -162,6 +171,7 @@ def write_file(path: str, content: str) -> str:
     p(0.4)
     (DEMO_DIR / path).write_text(content)
     return "written"
+
 
 def list_files() -> str:
     files = [f.name for f in DEMO_DIR.iterdir()]
@@ -171,10 +181,31 @@ def list_files() -> str:
     p(0.3)
     return "\n".join(files)
 
+
 tools = [
-    {"name": "list_files", "description": "List files in workspace", "input_schema": {"type": "object", "properties": {}}},
-    {"name": "read_file", "description": "Read a file", "input_schema": {"type": "object", "properties": {"path": {"type": "string"}}, "required": ["path"]}},
-    {"name": "write_file", "description": "Write content to a file", "input_schema": {"type": "object", "properties": {"path": {"type": "string"}, "content": {"type": "string"}}, "required": ["path", "content"]}},
+    {
+        "name": "list_files",
+        "description": "List files in workspace",
+        "input_schema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "read_file",
+        "description": "Read a file",
+        "input_schema": {
+            "type": "object",
+            "properties": {"path": {"type": "string"}},
+            "required": ["path"],
+        },
+    },
+    {
+        "name": "write_file",
+        "description": "Write content to a file",
+        "input_schema": {
+            "type": "object",
+            "properties": {"path": {"type": "string"}, "content": {"type": "string"}},
+            "required": ["path", "content"],
+        },
+    },
 ]
 
 tool_funcs = {
@@ -198,16 +229,16 @@ while True:
     api_calls += 1
     total_input += response.usage.input_tokens
     total_output += response.usage.output_tokens
-    
+
     if response.stop_reason == "end_turn":
         break
-    
+
     tool_results = []
     for block in response.content:
         if block.type == "tool_use":
             result = tool_funcs[block.name](**block.input)
             tool_results.append({"type": "tool_result", "tool_use_id": block.id, "content": result})
-    
+
     if tool_results:
         messages.append({"role": "assistant", "content": response.content})
         messages.append({"role": "user", "content": tool_results})
@@ -260,12 +291,14 @@ print()
 if (DEMO_DIR / "summary.txt").exists():
     summary = (DEMO_DIR / "summary.txt").read_text()
     print(f"  {DIM}summary.txt contents:{RESET}")
-    for line_text in summary.split('\n')[:3]:
+    for line_text in summary.split("\n")[:3]:
         print(f"  {DIM}  {line_text[:60]}{RESET}")
     print()
 
 secrets_leaked = "AWS_KEY" in str(messages) or "hunter2" in str(messages)
-print(f"  {DIM}secrets in conversation history: {RESET}{RED if secrets_leaked else GREEN}{secrets_leaked}{RESET}")
+print(
+    f"  {DIM}secrets in conversation history: {RESET}{RED if secrets_leaked else GREEN}{secrets_leaked}{RESET}"
+)
 p(0.5)
 
 # ═══════════════════════════════════════════════════════════
@@ -274,7 +307,9 @@ print(f"\n{BOLD}verification{RESET}\n")
 p(0.2)
 
 print(f"  {DIM}what you just saw:{RESET}")
-print(f"  • real claude api calls (sonnet 4, {api_calls} calls, {total_input+total_output} tokens)")
+print(
+    f"  • real claude api calls (sonnet 4, {api_calls} calls, {total_input + total_output} tokens)"
+)
 print(f"  • real file operations (check demo_workspace/ yourself)")
 print(f"  • real ed25519 signatures (verifiable, not mock)")
 print(f"  • real blocked access (secrets.txt never read)")

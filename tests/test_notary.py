@@ -21,6 +21,7 @@ from agentmint.patterns import matches_pattern
 
 # ── 4.3: Unified pattern matching ─────────────────────────
 
+
 class TestPatternMatching:
     def test_exact_match(self):
         assert matches_pattern("tts:standard", "tts:standard")
@@ -55,61 +56,82 @@ class TestPatternMatching:
 class TestPolicyEvaluation:
     def test_in_scope(self):
         result = evaluate_policy(
-            action="tts:standard:abc", agent="voice-agent",
-            plan_scope=["tts:standard:*"], plan_checkpoints=[],
-            plan_delegates=["voice-agent"], plan_expired=False,
+            action="tts:standard:abc",
+            agent="voice-agent",
+            plan_scope=["tts:standard:*"],
+            plan_checkpoints=[],
+            plan_delegates=["voice-agent"],
+            plan_expired=False,
         )
         assert result.in_policy is True
 
     def test_checkpoint_blocks(self):
         result = evaluate_policy(
-            action="voice:clone:ceo", agent="voice-agent",
-            plan_scope=["*"], plan_checkpoints=["voice:clone:*"],
-            plan_delegates=["voice-agent"], plan_expired=False,
+            action="voice:clone:ceo",
+            agent="voice-agent",
+            plan_scope=["*"],
+            plan_checkpoints=["voice:clone:*"],
+            plan_delegates=["voice-agent"],
+            plan_expired=False,
         )
         assert result.in_policy is False
         assert "checkpoint" in result.reason
 
     def test_checkpoint_checked_before_scope(self):
         result = evaluate_policy(
-            action="voice:clone:ceo", agent="voice-agent",
-            plan_scope=["voice:clone:*"], plan_checkpoints=["voice:clone:*"],
-            plan_delegates=["voice-agent"], plan_expired=False,
+            action="voice:clone:ceo",
+            agent="voice-agent",
+            plan_scope=["voice:clone:*"],
+            plan_checkpoints=["voice:clone:*"],
+            plan_delegates=["voice-agent"],
+            plan_expired=False,
         )
         assert result.in_policy is False
 
     def test_unauthorized_agent(self):
         result = evaluate_policy(
-            action="tts:standard:abc", agent="rogue-agent",
-            plan_scope=["tts:*"], plan_checkpoints=[],
-            plan_delegates=["voice-agent"], plan_expired=False,
+            action="tts:standard:abc",
+            agent="rogue-agent",
+            plan_scope=["tts:*"],
+            plan_checkpoints=[],
+            plan_delegates=["voice-agent"],
+            plan_expired=False,
         )
         assert result.in_policy is False
         assert "not in delegates_to" in result.reason
 
     def test_expired_plan(self):
         result = evaluate_policy(
-            action="tts:standard:abc", agent="voice-agent",
-            plan_scope=["*"], plan_checkpoints=[],
-            plan_delegates=[], plan_expired=True,
+            action="tts:standard:abc",
+            agent="voice-agent",
+            plan_scope=["*"],
+            plan_checkpoints=[],
+            plan_delegates=[],
+            plan_expired=True,
         )
         assert result.in_policy is False
         assert "expired" in result.reason
 
     def test_no_scope_match(self):
         result = evaluate_policy(
-            action="voice:delete:abc", agent="voice-agent",
-            plan_scope=["tts:*"], plan_checkpoints=[],
-            plan_delegates=["voice-agent"], plan_expired=False,
+            action="voice:delete:abc",
+            agent="voice-agent",
+            plan_scope=["tts:*"],
+            plan_checkpoints=[],
+            plan_delegates=["voice-agent"],
+            plan_expired=False,
         )
         assert result.in_policy is False
         assert "no scope" in result.reason
 
     def test_empty_delegates_allows_anyone(self):
         result = evaluate_policy(
-            action="tts:standard:abc", agent="any-agent",
-            plan_scope=["tts:*"], plan_checkpoints=[],
-            plan_delegates=[], plan_expired=False,
+            action="tts:standard:abc",
+            agent="any-agent",
+            plan_scope=["tts:*"],
+            plan_checkpoints=[],
+            plan_delegates=[],
+            plan_expired=False,
         )
         assert result.in_policy is True
 
@@ -160,10 +182,15 @@ class TestNotaryPlan:
 class TestNotariseReceipt:
     def test_in_policy_receipt(self):
         notary = Notary()
-        plan = notary.create_plan(user="admin", action="ops", scope=["tts:*"], delegates_to=["agent-1"])
+        plan = notary.create_plan(
+            user="admin", action="ops", scope=["tts:*"], delegates_to=["agent-1"]
+        )
         receipt = notary.notarise(
-            action="tts:standard:abc", agent="agent-1", plan=plan,
-            evidence={"voice_id": "abc"}, enable_timestamp=False,
+            action="tts:standard:abc",
+            agent="agent-1",
+            plan=plan,
+            evidence={"voice_id": "abc"},
+            enable_timestamp=False,
         )
         assert receipt.in_policy is True
         assert notary.verify_receipt(receipt) is True
@@ -171,12 +198,18 @@ class TestNotariseReceipt:
     def test_out_of_policy_receipt(self):
         notary = Notary()
         plan = notary.create_plan(
-            user="admin", action="ops", scope=["tts:*"],
-            checkpoints=["voice:clone:*"], delegates_to=["agent-1"],
+            user="admin",
+            action="ops",
+            scope=["tts:*"],
+            checkpoints=["voice:clone:*"],
+            delegates_to=["agent-1"],
         )
         receipt = notary.notarise(
-            action="voice:clone:ceo", agent="agent-1", plan=plan,
-            evidence={"clone_name": "ceo"}, enable_timestamp=False,
+            action="voice:clone:ceo",
+            agent="agent-1",
+            plan=plan,
+            evidence={"clone_name": "ceo"},
+            enable_timestamp=False,
         )
         assert receipt.in_policy is False
         assert notary.verify_receipt(receipt) is True
@@ -184,21 +217,29 @@ class TestNotariseReceipt:
     def test_evidence_hash_deterministic(self):
         notary = Notary()
         plan = notary.create_plan(user="a", action="x", scope=["*"])
-        r1 = notary.notarise(action="test", agent="a", plan=plan, evidence={"key": "value"}, enable_timestamp=False)
+        r1 = notary.notarise(
+            action="test", agent="a", plan=plan, evidence={"key": "value"}, enable_timestamp=False
+        )
         plan2 = notary.create_plan(user="a", action="x", scope=["*"])
-        r2 = notary.notarise(action="test", agent="a", plan=plan2, evidence={"key": "value"}, enable_timestamp=False)
+        r2 = notary.notarise(
+            action="test", agent="a", plan=plan2, evidence={"key": "value"}, enable_timestamp=False
+        )
         assert r1.evidence_hash == r2.evidence_hash
 
     def test_invalid_evidence_rejected(self):
         notary = Notary()
         plan = notary.create_plan(user="a", action="x", scope=["*"])
         with pytest.raises(NotaryError):
-            notary.notarise(action="test", agent="a", plan=plan, evidence="not a dict", enable_timestamp=False)
+            notary.notarise(
+                action="test", agent="a", plan=plan, evidence="not a dict", enable_timestamp=False
+            )
 
     def test_receipt_json_roundtrip(self):
         notary = Notary()
         plan = notary.create_plan(user="a", action="x", scope=["*"])
-        receipt = notary.notarise(action="test", agent="a", plan=plan, evidence={"k": 1}, enable_timestamp=False)
+        receipt = notary.notarise(
+            action="test", agent="a", plan=plan, evidence={"k": 1}, enable_timestamp=False
+        )
         parsed = json.loads(receipt.to_json())
         assert parsed["id"] == receipt.id
         assert parsed["in_policy"] == receipt.in_policy
@@ -207,25 +248,32 @@ class TestNotariseReceipt:
     def test_aiuc_controls_present(self):
         notary = Notary()
         plan = notary.create_plan(user="a", action="x", scope=["*"])
-        receipt = notary.notarise(action="test", agent="a", plan=plan, evidence={}, enable_timestamp=False)
+        receipt = notary.notarise(
+            action="test", agent="a", plan=plan, evidence={}, enable_timestamp=False
+        )
         assert "E015" in receipt.aiuc_controls
         assert "D003" in receipt.aiuc_controls
 
 
 # ── 4.4: Plan signature in receipt ────────────────────────
 
+
 class TestPlanSignatureInReceipt:
     def test_plan_signature_present(self):
         notary = Notary()
         plan = notary.create_plan(user="a", action="x", scope=["*"])
-        receipt = notary.notarise(action="test", agent="a", plan=plan, evidence={}, enable_timestamp=False)
+        receipt = notary.notarise(
+            action="test", agent="a", plan=plan, evidence={}, enable_timestamp=False
+        )
         assert receipt.plan_signature == plan.signature
         assert len(receipt.plan_signature) == 128
 
     def test_plan_signature_in_signable_dict(self):
         notary = Notary()
         plan = notary.create_plan(user="a", action="x", scope=["*"])
-        receipt = notary.notarise(action="test", agent="a", plan=plan, evidence={}, enable_timestamp=False)
+        receipt = notary.notarise(
+            action="test", agent="a", plan=plan, evidence={}, enable_timestamp=False
+        )
         signable = receipt.signable_dict()
         assert "plan_signature" in signable
         assert signable["plan_signature"] == plan.signature
@@ -233,40 +281,57 @@ class TestPlanSignatureInReceipt:
     def test_plan_signature_in_json(self):
         notary = Notary()
         plan = notary.create_plan(user="a", action="x", scope=["*"])
-        receipt = notary.notarise(action="test", agent="a", plan=plan, evidence={}, enable_timestamp=False)
+        receipt = notary.notarise(
+            action="test", agent="a", plan=plan, evidence={}, enable_timestamp=False
+        )
         parsed = json.loads(receipt.to_json())
         assert "plan_signature" in parsed
 
     def test_signature_valid_with_plan_signature(self):
         notary = Notary()
         plan = notary.create_plan(user="a", action="x", scope=["*"])
-        receipt = notary.notarise(action="test", agent="a", plan=plan, evidence={}, enable_timestamp=False)
+        receipt = notary.notarise(
+            action="test", agent="a", plan=plan, evidence={}, enable_timestamp=False
+        )
         assert notary.verify_receipt(receipt) is True
 
 
 # ── Receipt chain (including 4.2: per-plan isolation) ─────
 
+
 class TestReceiptChain:
     def test_first_receipt_has_no_chain_hash(self):
         notary = Notary()
         plan = notary.create_plan(user="a", action="x", scope=["*"])
-        r1 = notary.notarise(action="step:one", agent="a", plan=plan, evidence={"n": 1}, enable_timestamp=False)
+        r1 = notary.notarise(
+            action="step:one", agent="a", plan=plan, evidence={"n": 1}, enable_timestamp=False
+        )
         assert r1.previous_receipt_hash is None
 
     def test_second_receipt_has_chain_hash(self):
         notary = Notary()
         plan = notary.create_plan(user="a", action="x", scope=["*"])
-        r1 = notary.notarise(action="step:one", agent="a", plan=plan, evidence={"n": 1}, enable_timestamp=False)
-        r2 = notary.notarise(action="step:two", agent="a", plan=plan, evidence={"n": 2}, enable_timestamp=False)
+        r1 = notary.notarise(
+            action="step:one", agent="a", plan=plan, evidence={"n": 1}, enable_timestamp=False
+        )
+        r2 = notary.notarise(
+            action="step:two", agent="a", plan=plan, evidence={"n": 2}, enable_timestamp=False
+        )
         assert r2.previous_receipt_hash is not None
         assert len(r2.previous_receipt_hash) == 64  # SHA-256 hex
 
     def test_chain_of_three(self):
         notary = Notary()
         plan = notary.create_plan(user="a", action="x", scope=["*"])
-        r1 = notary.notarise(action="s:1", agent="a", plan=plan, evidence={"n": 1}, enable_timestamp=False)
-        r2 = notary.notarise(action="s:2", agent="a", plan=plan, evidence={"n": 2}, enable_timestamp=False)
-        r3 = notary.notarise(action="s:3", agent="a", plan=plan, evidence={"n": 3}, enable_timestamp=False)
+        r1 = notary.notarise(
+            action="s:1", agent="a", plan=plan, evidence={"n": 1}, enable_timestamp=False
+        )
+        r2 = notary.notarise(
+            action="s:2", agent="a", plan=plan, evidence={"n": 2}, enable_timestamp=False
+        )
+        r3 = notary.notarise(
+            action="s:3", agent="a", plan=plan, evidence={"n": 3}, enable_timestamp=False
+        )
         assert r1.previous_receipt_hash is None
         assert r2.previous_receipt_hash is not None
         assert r3.previous_receipt_hash is not None
@@ -276,7 +341,9 @@ class TestReceiptChain:
         notary = Notary()
         plan = notary.create_plan(user="a", action="x", scope=["*"])
         notary.notarise(action="s:1", agent="a", plan=plan, evidence={}, enable_timestamp=False)
-        r2 = notary.notarise(action="s:2", agent="a", plan=plan, evidence={}, enable_timestamp=False)
+        r2 = notary.notarise(
+            action="s:2", agent="a", plan=plan, evidence={}, enable_timestamp=False
+        )
         signable = r2.signable_dict()
         assert "previous_receipt_hash" in signable
         assert signable["previous_receipt_hash"] == r2.previous_receipt_hash
@@ -285,7 +352,9 @@ class TestReceiptChain:
         notary = Notary()
         plan = notary.create_plan(user="a", action="x", scope=["*"])
         notary.notarise(action="s:1", agent="a", plan=plan, evidence={}, enable_timestamp=False)
-        r2 = notary.notarise(action="s:2", agent="a", plan=plan, evidence={}, enable_timestamp=False)
+        r2 = notary.notarise(
+            action="s:2", agent="a", plan=plan, evidence={}, enable_timestamp=False
+        )
         parsed = json.loads(r2.to_json())
         assert "previous_receipt_hash" in parsed
 
@@ -293,18 +362,24 @@ class TestReceiptChain:
         notary = Notary()
         plan1 = notary.create_plan(user="a", action="x", scope=["*"])
         notary.notarise(action="s:1", agent="a", plan=plan1, evidence={}, enable_timestamp=False)
-        r2 = notary.notarise(action="s:2", agent="a", plan=plan1, evidence={}, enable_timestamp=False)
+        r2 = notary.notarise(
+            action="s:2", agent="a", plan=plan1, evidence={}, enable_timestamp=False
+        )
         assert r2.previous_receipt_hash is not None
 
         plan2 = notary.create_plan(user="a", action="y", scope=["*"])
-        r3 = notary.notarise(action="s:3", agent="a", plan=plan2, evidence={}, enable_timestamp=False)
+        r3 = notary.notarise(
+            action="s:3", agent="a", plan=plan2, evidence={}, enable_timestamp=False
+        )
         assert r3.previous_receipt_hash is None
 
     def test_signature_valid_with_chain_hash(self):
         notary = Notary()
         plan = notary.create_plan(user="a", action="x", scope=["*"])
         notary.notarise(action="s:1", agent="a", plan=plan, evidence={}, enable_timestamp=False)
-        r2 = notary.notarise(action="s:2", agent="a", plan=plan, evidence={}, enable_timestamp=False)
+        r2 = notary.notarise(
+            action="s:2", agent="a", plan=plan, evidence={}, enable_timestamp=False
+        )
         assert r2.previous_receipt_hash is not None
         assert notary.verify_receipt(r2) is True
 
@@ -315,10 +390,18 @@ class TestReceiptChain:
         plan_b = notary.create_plan(user="b", action="y", scope=["*"])
 
         # Interleave receipts
-        ra1 = notary.notarise(action="a:1", agent="a", plan=plan_a, evidence={"p": "a"}, enable_timestamp=False)
-        rb1 = notary.notarise(action="b:1", agent="b", plan=plan_b, evidence={"p": "b"}, enable_timestamp=False)
-        ra2 = notary.notarise(action="a:2", agent="a", plan=plan_a, evidence={"p": "a"}, enable_timestamp=False)
-        rb2 = notary.notarise(action="b:2", agent="b", plan=plan_b, evidence={"p": "b"}, enable_timestamp=False)
+        ra1 = notary.notarise(
+            action="a:1", agent="a", plan=plan_a, evidence={"p": "a"}, enable_timestamp=False
+        )
+        rb1 = notary.notarise(
+            action="b:1", agent="b", plan=plan_b, evidence={"p": "b"}, enable_timestamp=False
+        )
+        ra2 = notary.notarise(
+            action="a:2", agent="a", plan=plan_a, evidence={"p": "a"}, enable_timestamp=False
+        )
+        rb2 = notary.notarise(
+            action="b:2", agent="b", plan=plan_b, evidence={"p": "b"}, enable_timestamp=False
+        )
 
         # Plan A chain
         assert ra1.previous_receipt_hash is None
@@ -340,12 +423,15 @@ class TestReceiptChain:
 
 # ── 4.1: Notary uses KeyStore ─────────────────────────────
 
+
 class TestNotaryKeyStore:
     def test_ephemeral_key_default(self):
         """Default Notary() still works with ephemeral key."""
         notary = Notary()
         plan = notary.create_plan(user="a", action="x", scope=["*"])
-        receipt = notary.notarise(action="test", agent="a", plan=plan, evidence={}, enable_timestamp=False)
+        receipt = notary.notarise(
+            action="test", agent="a", plan=plan, evidence={}, enable_timestamp=False
+        )
         assert notary.verify_receipt(receipt) is True
 
     def test_persistent_key(self, tmp_path):
@@ -353,7 +439,9 @@ class TestNotaryKeyStore:
         key_dir = tmp_path / "keys"
         notary1 = Notary(key=key_dir)
         plan1 = notary1.create_plan(user="a", action="x", scope=["*"])
-        receipt1 = notary1.notarise(action="test", agent="a", plan=plan1, evidence={}, enable_timestamp=False)
+        receipt1 = notary1.notarise(
+            action="test", agent="a", plan=plan1, evidence={}, enable_timestamp=False
+        )
 
         # Second notary with same key dir should verify the first's receipts
         notary2 = Notary(key=key_dir)
@@ -364,11 +452,14 @@ class TestNotaryKeyStore:
         notary1 = Notary(key=tmp_path / "keys1")
         notary2 = Notary(key=tmp_path / "keys2")
         plan = notary1.create_plan(user="a", action="x", scope=["*"])
-        receipt = notary1.notarise(action="test", agent="a", plan=plan, evidence={}, enable_timestamp=False)
+        receipt = notary1.notarise(
+            action="test", agent="a", plan=plan, evidence={}, enable_timestamp=False
+        )
         assert notary2.verify_receipt(receipt) is False
 
 
 # ── 4.6: verify_chain() API ───────────────────────────────
+
 
 class TestVerifyChain:
     def test_empty_chain(self):
@@ -380,7 +471,9 @@ class TestVerifyChain:
     def test_single_receipt_chain(self):
         notary = Notary()
         plan = notary.create_plan(user="a", action="x", scope=["*"])
-        r1 = notary.notarise(action="s:1", agent="a", plan=plan, evidence={}, enable_timestamp=False)
+        r1 = notary.notarise(
+            action="s:1", agent="a", plan=plan, evidence={}, enable_timestamp=False
+        )
         result = verify_chain([r1])
         assert result.valid is True
         assert result.length == 1
@@ -389,9 +482,15 @@ class TestVerifyChain:
     def test_valid_chain_of_three(self):
         notary = Notary()
         plan = notary.create_plan(user="a", action="x", scope=["*"])
-        r1 = notary.notarise(action="s:1", agent="a", plan=plan, evidence={"n": 1}, enable_timestamp=False)
-        r2 = notary.notarise(action="s:2", agent="a", plan=plan, evidence={"n": 2}, enable_timestamp=False)
-        r3 = notary.notarise(action="s:3", agent="a", plan=plan, evidence={"n": 3}, enable_timestamp=False)
+        r1 = notary.notarise(
+            action="s:1", agent="a", plan=plan, evidence={"n": 1}, enable_timestamp=False
+        )
+        r2 = notary.notarise(
+            action="s:2", agent="a", plan=plan, evidence={"n": 2}, enable_timestamp=False
+        )
+        r3 = notary.notarise(
+            action="s:3", agent="a", plan=plan, evidence={"n": 3}, enable_timestamp=False
+        )
         result = verify_chain([r1, r2, r3])
         assert result.valid is True
         assert result.length == 3
@@ -400,9 +499,15 @@ class TestVerifyChain:
     def test_broken_chain_detects_gap(self):
         notary = Notary()
         plan = notary.create_plan(user="a", action="x", scope=["*"])
-        r1 = notary.notarise(action="s:1", agent="a", plan=plan, evidence={"n": 1}, enable_timestamp=False)
-        r2 = notary.notarise(action="s:2", agent="a", plan=plan, evidence={"n": 2}, enable_timestamp=False)
-        r3 = notary.notarise(action="s:3", agent="a", plan=plan, evidence={"n": 3}, enable_timestamp=False)
+        r1 = notary.notarise(
+            action="s:1", agent="a", plan=plan, evidence={"n": 1}, enable_timestamp=False
+        )
+        r2 = notary.notarise(
+            action="s:2", agent="a", plan=plan, evidence={"n": 2}, enable_timestamp=False
+        )
+        r3 = notary.notarise(
+            action="s:3", agent="a", plan=plan, evidence={"n": 3}, enable_timestamp=False
+        )
         # Skip r2 — chain should break at r3
         result = verify_chain([r1, r3])
         assert result.valid is False
@@ -412,7 +517,9 @@ class TestVerifyChain:
         notary = Notary()
         plan = notary.create_plan(user="a", action="x", scope=["*"])
         notary.notarise(action="s:1", agent="a", plan=plan, evidence={}, enable_timestamp=False)
-        r2 = notary.notarise(action="s:2", agent="a", plan=plan, evidence={}, enable_timestamp=False)
+        r2 = notary.notarise(
+            action="s:2", agent="a", plan=plan, evidence={}, enable_timestamp=False
+        )
         # Starting with r2 (which has a previous hash) should fail
         result = verify_chain([r2])
         assert result.valid is False
@@ -421,10 +528,12 @@ class TestVerifyChain:
 
 # ── Public key PEM ─────────────────────────────────────────
 
+
 class TestPublicKeyPem:
     def test_pem_format(self):
         notary = Notary()
         from agentmint.notary import _public_key_pem
+
         pem = _public_key_pem(notary.verify_key)
         assert pem.startswith("-----BEGIN PUBLIC KEY-----\n")
         assert pem.endswith("-----END PUBLIC KEY-----\n")
@@ -432,6 +541,7 @@ class TestPublicKeyPem:
     def test_pem_contains_valid_der(self):
         notary = Notary()
         from agentmint.notary import _public_key_pem
+
         pem = _public_key_pem(notary.verify_key)
         lines = pem.strip().split("\n")
         b64 = "".join(lines[1:-1])
@@ -452,11 +562,18 @@ class TestPublicKeyPem:
 
 # ── Evidence package (including 4.7: chain root) ──────────
 
+
 class TestEvidencePackage:
     def test_export_creates_zip(self, tmp_path):
         notary = Notary()
         plan = notary.create_plan(user="a", action="x", scope=["tts:*"])
-        notary.notarise(action="tts:standard:abc", agent="a", plan=plan, evidence={"v": 1}, enable_timestamp=False)
+        notary.notarise(
+            action="tts:standard:abc",
+            agent="a",
+            plan=plan,
+            evidence={"v": 1},
+            enable_timestamp=False,
+        )
         zip_path = notary.export_evidence(tmp_path)
         assert zip_path.exists()
         assert zip_path.suffix == ".zip"
@@ -477,7 +594,9 @@ class TestEvidencePackage:
         notary = Notary()
         plan = notary.create_plan(user="a", action="x", scope=["tts:*"], checkpoints=["voice:*"])
         notary.notarise(action="tts:ok", agent="a", plan=plan, evidence={}, enable_timestamp=False)
-        notary.notarise(action="voice:clone:bad", agent="a", plan=plan, evidence={}, enable_timestamp=False)
+        notary.notarise(
+            action="voice:clone:bad", agent="a", plan=plan, evidence={}, enable_timestamp=False
+        )
         zip_path = notary.export_evidence(tmp_path)
         with zipfile.ZipFile(zip_path) as zf:
             index = json.loads(zf.read("receipt_index.json"))
@@ -542,12 +661,15 @@ class TestEvidencePackage:
 
 # ── Key ID (revocation support) ──────────────────────────
 
+
 class TestKeyId:
     def test_key_id_present_and_consistent(self):
         """key_id flows from Notary → plan → receipt → evidence index."""
         notary = Notary()
         plan = notary.create_plan(user="a", action="x", scope=["*"])
-        receipt = notary.notarise(action="test", agent="a", plan=plan, evidence={}, enable_timestamp=False)
+        receipt = notary.notarise(
+            action="test", agent="a", plan=plan, evidence={}, enable_timestamp=False
+        )
         kid = notary.key_id
         assert len(kid) == 16
         assert plan.key_id == kid
@@ -560,6 +682,7 @@ class TestKeyId:
         notary.notarise(action="test", agent="a", plan=plan, evidence={}, enable_timestamp=False)
         zip_path = notary.export_evidence(tmp_path)
         import json, zipfile
+
         with zipfile.ZipFile(zip_path) as zf:
             index = json.loads(zf.read("receipt_index.json"))
         assert index["key_id"] == notary.key_id
@@ -575,20 +698,29 @@ class TestKeyId:
 
 # ── Chain state persistence (crash recovery) ─────────────
 
+
 class TestChainPersistence:
     def test_chain_survives_restart(self, tmp_path):
         """Persistent notary resumes chain after restart."""
         key_dir = tmp_path / "keys"
         notary1 = Notary(key=key_dir)
         plan = notary1.create_plan(user="a", action="x", scope=["*"])
-        r1 = notary1.notarise(action="s:1", agent="a", plan=plan, evidence={"n": 1}, enable_timestamp=False)
+        r1 = notary1.notarise(
+            action="s:1", agent="a", plan=plan, evidence={"n": 1}, enable_timestamp=False
+        )
         assert r1.previous_receipt_hash is None
 
         # "Crash" — new Notary instance, same key dir
         notary2 = Notary(key=key_dir)
-        plan2 = notary2.create_plan(user="a", action="x", scope=["*"], )
+        plan2 = notary2.create_plan(
+            user="a",
+            action="x",
+            scope=["*"],
+        )
         # Old plan's chain should still be loadable
-        r2 = notary2.notarise(action="s:2", agent="a", plan=plan, evidence={"n": 2}, enable_timestamp=False)
+        r2 = notary2.notarise(
+            action="s:2", agent="a", plan=plan, evidence={"n": 2}, enable_timestamp=False
+        )
         assert r2.previous_receipt_hash is not None
         assert notary2.verify_receipt(r2)
 
@@ -609,18 +741,22 @@ class TestChainPersistence:
         state_file = key_dir / "chain_state.json"
         assert state_file.exists()
         import stat
+
         perms = stat.S_IMODE(state_file.stat().st_mode)
         assert perms == 0o600
 
 
 # ── Agent co-signature ───────────────────────────────────
 
+
 class TestAgentCoSignature:
     def test_no_agent_key_is_noop(self):
         """Without agent_key, receipts work exactly as before."""
         notary = Notary()
         plan = notary.create_plan(user="a", action="x", scope=["*"])
-        receipt = notary.notarise(action="test", agent="a", plan=plan, evidence={}, enable_timestamp=False)
+        receipt = notary.notarise(
+            action="test", agent="a", plan=plan, evidence={}, enable_timestamp=False
+        )
         assert receipt.agent_signature == ""
         assert receipt.agent_key_id == ""
         assert notary.verify_receipt(receipt)
@@ -629,28 +765,51 @@ class TestAgentCoSignature:
         """Agent key produces a verifiable co-signature on the evidence."""
         from nacl.signing import SigningKey as SK
         from agentmint.notary import _canonical_json
+
         agent_sk = SK.generate()
         notary = Notary()
         plan = notary.create_plan(user="a", action="x", scope=["*"])
         evidence = {"tool": "tts", "result": "ok"}
         receipt = notary.notarise(
-            action="test", agent="a", plan=plan,
-            evidence=evidence, enable_timestamp=False, agent_key=agent_sk)
+            action="test",
+            agent="a",
+            plan=plan,
+            evidence=evidence,
+            enable_timestamp=False,
+            agent_key=agent_sk,
+        )
         # Both signatures present
         assert len(receipt.agent_signature) == 128
         assert len(receipt.agent_key_id) == 16
         # Notary sig valid
         assert notary.verify_receipt(receipt)
         # Agent sig independently verifiable
-        agent_sk.verify_key.verify(_canonical_json(evidence), bytes.fromhex(receipt.agent_signature))
+        agent_sk.verify_key.verify(
+            _canonical_json(evidence), bytes.fromhex(receipt.agent_signature)
+        )
 
     def test_same_agent_key_same_id_across_receipts(self):
         """Same agent key produces same agent_key_id — auditors can track continuity."""
         from nacl.signing import SigningKey as SK
+
         agent_sk = SK.generate()
         notary = Notary()
         plan = notary.create_plan(user="a", action="x", scope=["*"])
-        r1 = notary.notarise(action="s:1", agent="a", plan=plan, evidence={"n": 1}, enable_timestamp=False, agent_key=agent_sk)
-        r2 = notary.notarise(action="s:2", agent="a", plan=plan, evidence={"n": 2}, enable_timestamp=False, agent_key=agent_sk)
+        r1 = notary.notarise(
+            action="s:1",
+            agent="a",
+            plan=plan,
+            evidence={"n": 1},
+            enable_timestamp=False,
+            agent_key=agent_sk,
+        )
+        r2 = notary.notarise(
+            action="s:2",
+            agent="a",
+            plan=plan,
+            evidence={"n": 2},
+            enable_timestamp=False,
+            agent_key=agent_sk,
+        )
         assert r1.agent_key_id == r2.agent_key_id
         assert r1.agent_signature != r2.agent_signature  # different evidence, different sig

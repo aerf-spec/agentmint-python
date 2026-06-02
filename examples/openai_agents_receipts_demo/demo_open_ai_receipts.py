@@ -38,6 +38,7 @@ receipts = []
 
 # ── Helpers ────────────────────────────────────────────────
 
+
 def sha256_json(obj: dict) -> str:
     """Deterministic SHA-256 of a JSON-serializable dict."""
     return hashlib.sha256(json.dumps(obj, sort_keys=True, default=str).encode()).hexdigest()
@@ -78,8 +79,11 @@ plan = notary.create_plan(
     user="ops-lead@company.com",
     action="openai-agent-ops",
     scope=[
-        "tool:get_weather", "tool:lookup_account", "tool:send_notification",
-        f"agent:turn:{MAIN_AGENT}", f"agent:turn:{NOTIF_AGENT}",
+        "tool:get_weather",
+        "tool:lookup_account",
+        "tool:send_notification",
+        f"agent:turn:{MAIN_AGENT}",
+        f"agent:turn:{NOTIF_AGENT}",
     ],
     delegates_to=[MAIN_AGENT, NOTIF_AGENT],
     ttl_seconds=600,
@@ -94,11 +98,21 @@ plan = notary.create_plan(
 @function_tool
 def get_weather(city: str) -> str:
     """Get current weather for a city."""
-    weather = {"new york": "72°F, partly cloudy", "london": "58°F, overcast", "tokyo": "68°F, clear skies"}
+    weather = {
+        "new york": "72°F, partly cloudy",
+        "london": "58°F, overcast",
+        "tokyo": "68°F, clear skies",
+    }
     result = weather.get(city.lower(), f"Weather unavailable for {city}")
     r = notarise(
-        action="tool:get_weather", agent_name=MAIN_AGENT, cosign=True,
-        evidence={"tool": "get_weather", "args_hash": sha256_json({"city": city}), "output_hash": sha256_str(result)},
+        action="tool:get_weather",
+        agent_name=MAIN_AGENT,
+        cosign=True,
+        evidence={
+            "tool": "get_weather",
+            "args_hash": sha256_json({"city": city}),
+            "output_hash": sha256_str(result),
+        },
     )
     print_receipt(r, "tool:get_weather")
     return result
@@ -107,11 +121,20 @@ def get_weather(city: str) -> str:
 @function_tool
 def lookup_account(account_id: str) -> str:
     """Look up account details by ID."""
-    accounts = {"ACC-001": "Active | Balance: $12,450 | Owner: Alice Chen", "ACC-002": "Active | Balance: $8,200 | Owner: Bob Smith"}
+    accounts = {
+        "ACC-001": "Active | Balance: $12,450 | Owner: Alice Chen",
+        "ACC-002": "Active | Balance: $8,200 | Owner: Bob Smith",
+    }
     result = accounts.get(account_id, f"Account {account_id} not found")
     r = notarise(
-        action="tool:lookup_account", agent_name=MAIN_AGENT, cosign=True,
-        evidence={"tool": "lookup_account", "args_hash": sha256_json({"account_id": account_id}), "output_hash": sha256_str(result)},
+        action="tool:lookup_account",
+        agent_name=MAIN_AGENT,
+        cosign=True,
+        evidence={
+            "tool": "lookup_account",
+            "args_hash": sha256_json({"account_id": account_id}),
+            "output_hash": sha256_str(result),
+        },
     )
     print_receipt(r, "tool:lookup_account")
     return result
@@ -122,8 +145,14 @@ def send_notification(recipient: str, message: str) -> str:
     """Send a notification to a user."""
     result = f"Notification sent to {recipient}: '{message[:50]}'"
     r = notarise(
-        action="tool:send_notification", agent_name=NOTIF_AGENT, cosign=True,
-        evidence={"tool": "send_notification", "args_hash": sha256_json({"recipient": recipient, "message": message}), "output_hash": sha256_str(result)},
+        action="tool:send_notification",
+        agent_name=NOTIF_AGENT,
+        cosign=True,
+        evidence={
+            "tool": "send_notification",
+            "args_hash": sha256_json({"recipient": recipient, "message": message}),
+            "output_hash": sha256_str(result),
+        },
     )
     print_receipt(r, "tool:send_notification")
     return result
@@ -140,7 +169,8 @@ class ReceiptHooks(RunHooks):
     async def on_agent_end(self, context, agent, output) -> None:
         action = f"agent:turn:{agent.name}"
         r = notarise(
-            action=action, agent_name=agent.name,
+            action=action,
+            agent_name=agent.name,
             evidence={"event": "agent_turn_complete", "has_output": output is not None},
         )
         print_receipt(r, action)
@@ -166,6 +196,7 @@ main_agent = Agent(
 
 
 # ── Run ────────────────────────────────────────────────────
+
 
 def main():
     print(f"\n{'=' * 64}")

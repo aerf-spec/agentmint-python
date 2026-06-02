@@ -13,7 +13,10 @@ class TestSessionId:
     def test_session_id_present(self) -> None:
         notary = Notary()
         plan = notary.create_plan(
-            user="u@test.com", action="t", scope=["read:*"], delegates_to=["a"],
+            user="u@test.com",
+            action="t",
+            scope=["read:*"],
+            delegates_to=["a"],
         )
         receipt = notary.notarise("read:x", "a", plan, evidence={"k": "v"}, enable_timestamp=False)
         assert receipt.session_id != ""
@@ -22,7 +25,10 @@ class TestSessionId:
     def test_session_id_stable_within_notary(self) -> None:
         notary = Notary()
         plan = notary.create_plan(
-            user="u@test.com", action="t", scope=["read:*"], delegates_to=["a"],
+            user="u@test.com",
+            action="t",
+            scope=["read:*"],
+            delegates_to=["a"],
         )
         r1 = notary.notarise("read:x", "a", plan, evidence={"k": "1"}, enable_timestamp=False)
         r2 = notary.notarise("read:y", "a", plan, evidence={"k": "2"}, enable_timestamp=False)
@@ -40,7 +46,10 @@ class TestSessionTrajectory:
     def test_first_receipt_has_one_entry(self) -> None:
         notary = Notary()
         plan = notary.create_plan(
-            user="u@test.com", action="t", scope=["read:*"], delegates_to=["a"],
+            user="u@test.com",
+            action="t",
+            scope=["read:*"],
+            delegates_to=["a"],
         )
         receipt = notary.notarise("read:x", "a", plan, evidence={"k": "v"}, enable_timestamp=False)
         assert len(receipt.session_trajectory) == 1
@@ -49,12 +58,18 @@ class TestSessionTrajectory:
     def test_trajectory_grows_to_five(self) -> None:
         notary = Notary()
         plan = notary.create_plan(
-            user="u@test.com", action="t", scope=["read:*"], delegates_to=["a"],
+            user="u@test.com",
+            action="t",
+            scope=["read:*"],
+            delegates_to=["a"],
         )
         for i in range(7):
             receipt = notary.notarise(
-                f"read:file{i}", "a", plan,
-                evidence={"i": str(i)}, enable_timestamp=False,
+                f"read:file{i}",
+                "a",
+                plan,
+                evidence={"i": str(i)},
+                enable_timestamp=False,
             )
         # Last receipt should have exactly 5 trajectory entries (last 5 of 7)
         assert len(receipt.session_trajectory) == 5
@@ -62,7 +77,10 @@ class TestSessionTrajectory:
     def test_trajectory_in_signable_dict(self) -> None:
         notary = Notary()
         plan = notary.create_plan(
-            user="u@test.com", action="t", scope=["read:*"], delegates_to=["a"],
+            user="u@test.com",
+            action="t",
+            scope=["read:*"],
+            delegates_to=["a"],
         )
         receipt = notary.notarise("read:x", "a", plan, evidence={"k": "v"}, enable_timestamp=False)
         sd = receipt.signable_dict()
@@ -75,7 +93,10 @@ class TestSessionPolicy:
     def test_escalation_after_threshold(self) -> None:
         notary = Notary(session_policy={"read:*": {"escalate_after": 2}})
         plan = notary.create_plan(
-            user="u@test.com", action="t", scope=["read:*"], delegates_to=["a"],
+            user="u@test.com",
+            action="t",
+            scope=["read:*"],
+            delegates_to=["a"],
         )
         r1 = notary.notarise("read:a", "a", plan, evidence={"k": "1"}, enable_timestamp=False)
         r2 = notary.notarise("read:b", "a", plan, evidence={"k": "2"}, enable_timestamp=False)
@@ -89,7 +110,10 @@ class TestSessionPolicy:
     def test_deny_after_threshold(self) -> None:
         notary = Notary(session_policy={"read:*": {"deny_after": 3}})
         plan = notary.create_plan(
-            user="u@test.com", action="t", scope=["read:*"], delegates_to=["a"],
+            user="u@test.com",
+            action="t",
+            scope=["read:*"],
+            delegates_to=["a"],
         )
         for i in range(3):
             notary.notarise(f"read:{i}", "a", plan, evidence={"k": str(i)}, enable_timestamp=False)
@@ -102,11 +126,17 @@ class TestSessionPolicy:
     def test_no_policy_means_no_escalation(self) -> None:
         notary = Notary()
         plan = notary.create_plan(
-            user="u@test.com", action="t", scope=["read:*"], delegates_to=["a"],
+            user="u@test.com",
+            action="t",
+            scope=["read:*"],
+            delegates_to=["a"],
         )
         for i in range(10):
             receipt = notary.notarise(
-                f"read:{i}", "a", plan,
-                evidence={"k": str(i)}, enable_timestamp=False,
+                f"read:{i}",
+                "a",
+                plan,
+                evidence={"k": str(i)},
+                enable_timestamp=False,
             )
         assert receipt.session_escalation is None

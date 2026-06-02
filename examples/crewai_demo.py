@@ -4,9 +4,11 @@ AgentMint Demo - For João
 """
 
 import os, sys, warnings, time
+
 os.environ["OTEL_SDK_DISABLED"] = "true"
 warnings.filterwarnings("ignore")
 import logging
+
 logging.getLogger().setLevel(logging.CRITICAL)
 
 import boto3
@@ -23,20 +25,23 @@ BUCKET = "agentmint-demo-1772509489"
 # S3 Tool
 # ═══════════════════════════════════════════════════════════════
 
+
 class S3Input(BaseModel):
     path: str = Field(description="S3 path")
+
 
 class S3Reader(BaseTool):
     name: str = "s3_reader"
     description: str = "Read file from S3"
     args_schema: Type[BaseModel] = S3Input
-    
+
     def _run(self, path: str) -> str:
         try:
-            obj = boto3.client('s3').get_object(Bucket=BUCKET, Key=path)
-            return obj['Body'].read().decode('utf-8')
+            obj = boto3.client("s3").get_object(Bucket=BUCKET, Key=path)
+            return obj["Body"].read().decode("utf-8")
         except Exception as e:
             return f"Error: {e}"
+
 
 # ═══════════════════════════════════════════════════════════════
 # Colors
@@ -48,34 +53,39 @@ R = "\033[91m"  # red
 Y = "\033[93m"  # yellow
 C = "\033[96m"  # cyan
 D = "\033[90m"  # dim
-X = "\033[0m"   # reset
-B = "\033[1m"   # bold
+X = "\033[0m"  # reset
+B = "\033[1m"  # bold
+
 
 def header(t):
-    print(f"\n{W}{'═'*64}")
+    print(f"\n{W}{'═' * 64}")
     print(f" {B}{t}{X}")
-    print(f"{W}{'═'*64}{X}")
+    print(f"{W}{'═' * 64}{X}")
+
 
 def section(t):
-    print(f"\n{D}{'─'*64}{X}")
+    print(f"\n{D}{'─' * 64}{X}")
     print(f" {W}{B}{t}{X}")
-    print(f"{D}{'─'*64}{X}")
+    print(f"{D}{'─' * 64}{X}")
+
 
 def pause(s=1.5):
     time.sleep(s)
 
+
 def show_file(path):
     """Actually fetch and display the file"""
-    s3 = boto3.client('s3')
+    s3 = boto3.client("s3")
     obj = s3.get_object(Bucket=BUCKET, Key=path)
-    content = obj['Body'].read().decode('utf-8')
+    content = obj["Body"].read().decode("utf-8")
     print(f"\n {C}$ aws s3 cp s3://{BUCKET}/{path} -{X}")
-    print(f" {D}┌{'─'*58}┐{X}")
-    for line in content.strip().split('\n'):
+    print(f" {D}┌{'─' * 58}┐{X}")
+    for line in content.strip().split("\n"):
         truncated = line[:56] if len(line) > 56 else line
         padding = 56 - len(truncated)
-        print(f" {D}│{X} {truncated}{' '*padding} {D}│{X}")
-    print(f" {D}└{'─'*58}┘{X}")
+        print(f" {D}│{X} {truncated}{' ' * padding} {D}│{X}")
+    print(f" {D}└{'─' * 58}┘{X}")
+
 
 # ═══════════════════════════════════════════════════════════════
 # DEMO START
@@ -151,6 +161,7 @@ pause(1)
 blocked_calls = []
 allowed_calls = []
 
+
 @before_tool_call
 def gate(ctx: ToolCallHookContext) -> bool | None:
     if ctx.tool_name != "s3_reader":
@@ -158,15 +169,13 @@ def gate(ctx: ToolCallHookContext) -> bool | None:
     path = ctx.tool_input.get("path", "")
     action = f"s3:read:{path.replace('/', ':')}"
     agent = ctx.agent.role if ctx.agent else "unknown"
-    
+
     result = mint.delegate(parent=plan, agent=agent, action=action)
-    
+
     if result.ok:
-        allowed_calls.append({
-            "path": path,
-            "receipt": result.receipt.short_id,
-            "sig": result.receipt.signature[:24]
-        })
+        allowed_calls.append(
+            {"path": path, "receipt": result.receipt.short_id, "sig": result.receipt.signature[:24]}
+        )
         print(f"   {G}✓ ALLOW{X} {path}")
         print(f"     {D}action:  {action}{X}")
         print(f"     {D}receipt: {result.receipt.short_id}{X}")
@@ -178,6 +187,7 @@ def gate(ctx: ToolCallHookContext) -> bool | None:
         print(f"     {D}action:  {action}{X}")
         print(f"     {D}reason:  {result.status.value}{X}")
         return False
+
 
 analyst = Agent(
     role="analyst",
@@ -197,7 +207,7 @@ task = Task(
 print(f"   {D}Running CrewAI agent...{X}\n")
 pause(1)
 
-sys.stderr = open(os.devnull, 'w')
+sys.stderr = open(os.devnull, "w")
 try:
     Crew(agents=[analyst], tasks=[task], verbose=False).kickoff()
 except:
@@ -211,9 +221,9 @@ print(f"""
 
    The agent read the allowed file, saw the injection,
    and attempted to read confidential/credentials.txt.
-   
+
    {G}AgentMint intercepted the tool call and blocked it.{X}
-   
+
    The injection failed. Credentials were never accessed.
 """)
 pause(4)
@@ -237,7 +247,7 @@ print(f"\n {W}2. This file is in scope, but contains a secret:{X}")
 show_file("reports/q4-with-secret.txt")
 pause(3)
 
-print(f"\n {Y}   ⚠ An AWS key is embedded in the \"allowed\" file{X}")
+print(f'\n {Y}   ⚠ An AWS key is embedded in the "allowed" file{X}')
 pause(2)
 
 print(f"\n {W}3. Agent reads the file:{X}\n")
@@ -261,7 +271,7 @@ task2 = Task(
     agent=analyst2,
 )
 
-sys.stderr = open(os.devnull, 'w')
+sys.stderr = open(os.devnull, "w")
 try:
     Crew(agents=[analyst2], tasks=[task2], verbose=False).kickoff()
 except:
@@ -274,9 +284,9 @@ print(f"""
  {W}4. Result:{X}
 
    {G}✓ AgentMint allowed the read{X} - the file is in scope.
-   
+
    {R}✗ But the secret is now in the LLM's context window.{X}
-   
+
    AgentMint cannot help here. The agent accessed exactly
    what it was authorized to access. The problem is that
    sensitive data was in an allowed location.
@@ -285,10 +295,10 @@ pause(3)
 
 print(f"""
  {Y}This is the boundary:{X}
-   
+
    AgentMint = {W}Authorization{X} (who can call what tools)
    DLP        = {W}Data Classification{X} (what's in the files)
-   
+
    You need both. AgentMint is one layer.
 """)
 pause(4)
@@ -303,7 +313,7 @@ print(f"""
    ✓ Prompt injection → scope escape
    ✓ Unauthorized agents
    ✓ Replay attacks (single-use receipts)
-   
+
  {R}AgentMint cannot stop:{X}
    ✗ Secrets in allowed files
    ✗ Data already in context
@@ -311,16 +321,16 @@ print(f"""
 
  {W}Integration:{X}
    @before_tool_call hook - {C}20 lines{X}
-   
+
  {W}Performance:{X}
    ~85μs per authorization check
    Ed25519 signatures, not network calls
-   
+
  {D}AgentMint is IAM for agents.
  Defense in depth requires multiple layers.{X}
 """)
 pause(2)
 
-print(f"{D}{'─'*64}{X}")
+print(f"{D}{'─' * 64}{X}")
 print(f" {C}github.com/aniketh-maddipati/agentmint{X}")
-print(f"{D}{'─'*64}{X}\n")
+print(f"{D}{'─' * 64}{X}\n")

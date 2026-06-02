@@ -3,6 +3,7 @@
 Single source of truth for extracting names from LibCST nodes.
 Every detector imports from here — no duplicate implementations.
 """
+
 from __future__ import annotations
 from typing import List, Optional, Sequence
 

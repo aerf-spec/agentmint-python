@@ -5,6 +5,7 @@ Single source of truth. All CLI modules import from here.
 Uses Rich hex color syntax for 24-bit terminal support.
 Falls back gracefully when Rich is not installed.
 """
+
 from __future__ import annotations
 
 __all__ = ["C", "rich_available"]
@@ -14,6 +15,7 @@ def rich_available() -> bool:
     """Check if Rich is installed without importing it."""
     try:
         import rich  # noqa: F401
+
         return True
     except ImportError:
         return False
