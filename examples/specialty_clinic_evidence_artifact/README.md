@@ -1,102 +1,83 @@
-# AgentMint :: signed receipts for AI agent actions
+# AgentMint - signed receipts for what your agent did
 
-**Small teams should have big-company trust. Period.**
+Working primitive for cryptographic evidence of agent actions. Built around one principle: all data belongs to your customer. Keys, receipts, evidence all live on their infrastructure. AgentMint as a service is invisible after the wrap is in place.
 
-**Goal:** Get the first agent deal closed faster, with trust that compounds across every deal after.
+---
 
-A working primitive for cryptographic evidence of what your AI agent did. Customer holds the key. Vendor never sees it. Anyone can verify offline. 
-Healthcare admin actions as an example but the primitive works for any agent action.
+## The lifecycle
+
+**One.** I work with your team to wrap the agent. Most of your agent's actions already pass through a tool-call boundary (filing to a portal, writing to a chart, polling status). The wrap sits at that boundary. No changes to your agent's logic. The instrumentation work is mine, not your team's. Days, not months.
+
+**Two.** Your customer generates the signing key on their own infrastructure. They keep the private key. They hand you (and through you, your agent) the public key. From that point forward, every signed receipt your agent emits is signed by a key the customer owns and you never hold. This is the property that makes the receipt portable later. The customer can hand it to anyone and the verifier does not need to trust you to check it.
+
+**Three.** Every agent action emits a signed receipt as a byproduct. Ten fields. No PHI. Hash pointers to the payload. Signed at the moment the action happens. Linked to the previous receipt by hash so the workflow forms a chain. Receipts go wherever the customer wants. Their S3, their EHR, their own compliance system. Not your dashboard. Not your database.
+
+**Four.** When someone downstream asks for proof, the customer answers without you. A payer disputing a claim, an auditor checking compliance, a hospital network credentialing the practice, a buyer doing due diligence on the practice. They get the relevant receipt and the public key. They run openssl against it. They verify offline. You are not in the room. Your team is not pulled into the support ticket. The customer scales their own verification.
+
+**Five.** The spec evolves and the reference implementation tracks it. AgentMint is published as the AERF spec. You do not maintain audit infrastructure as a side product of your real product.
+
+Days to wrap. Permanent ownership for your customer. No data held by me, ever.
+
+---
+
+## What this looks like in practice
+
+A specialty pain practice runs a prior-auth agent. Patient needs an MRI, order goes in, agent files the auth, polls for status, files the approval back to the chart. Six months later the payer disputes the claim and asks for proof the auth was filed in time. The practice administrator opens their receipts folder, pulls the receipt for that step, emails it to the payer with their public key, and the payer verifies it themselves with openssl. The dispute resolves. Your support team never hears about it.
+
+Same pattern for a HIPAA audit, a network credentialing review, an acquisition diligence cycle, or the practice's own internal compliance. Evidence is portable. Verification is offline. Your team's hours are not the bottleneck.
 
 ---
 
 ## The receipt
 
-`sample_output/receipts/00001.json`:
+Ten fields. The action the agent took, a SHA-256 hash of the action's payload (so no PHI is in the receipt itself), a hashed pointer to the patient, a link to the previous receipt in the chain, a timestamp, and an Ed25519 signature over the whole thing. Full example in `sample_output/receipts/00001.json`. Run the demo to generate a fresh one against your own key.
 
 ```json
 {
-    "action": "prior_authorization_submission",
-    "agent_id": "specialty-clinic-pa-agent-v1",
-    "payload_sha256": "0bdc4757049c12b102789da4432e035ffdbd626b3df4d873b93a75c78e3ce20f",
-    "previous_receipt_hash": "GENESIS",
-    "public_key_id": "agentmint_demo_pub_v1",
-    "receipt_id": "00001",
-    "signature_alg": "ed25519",
-    "subject_ref": "6a64cb593d3ba4c9f11d94d1c278ec5d2f7868fb939097f80c6be5d3f7607c46",
-    "timestamp": "2026-05-01T19:07:43.317124+00:00",
-    "version": "1.0"
+  "action": "prior_authorization_submission",
+  "agent_id": "specialty-clinic-pa-agent-v1",
+  "payload_sha256": "8c00fedf74b6efd1ff1abf4d0b0a1bdd012e6ee5c96aac82fa68b6058376c4a3",
+  "previous_receipt_hash": "GENESIS",
+  "public_key_id": "agentmint_demo_pub_v1",
+  "receipt_id": "00001",
+  "signature_alg": "ed25519",
+  "subject_ref": "6a64cb593d3ba4c9f11d94d1c278ec5d2f7868fb939097f80c6be5d3f7607c46",
+  "timestamp": "2026-05-01T21:42:53.088046+00:00",
+  "version": "1.0"
 }
 ```
 
-Zero PHI — hashes only. Signed with Ed25519. Chain-linked via `previous_receipt_hash`.
-
 ---
 
-## Try it
-
-## Download and run
+## Run it
 
 ```bash
-curl -LO https://github.com/aniketh-maddipati/agentmint-python/raw/main/examples/specialty_clinic_evidence_artifact/agentmint-evidence-demo.tar.gz
-tar -xzf agentmint-evidence-demo.tar.gz
-cd agentmint-evidence-demo
-./agentmint verify
+pip install -r requirements.txt
+python3 run_demo.py
+bash verify.sh
+python3 demo_tamper.py
 ```
 
-That's it. Three commands, no Python, no install. Verifies a real signed receipt against a real public key in about 2 seconds.
-
-Then optionally:
-
-```bash
-./agentmint tamper    # flip a byte, watch verify fail, restore, watch it pass
-./agentmint demo      # generate a fresh receipt (requires Python 3.9+)
-./agentmint all       # all three in sequence
-```
+Four commands. Two Python package dependencies. The verifier runs on openssl 3.0+ and jq.
 
 ---
 
-## Things you'd like to know
+## What working together looks like
 
-- **Install:** two pure-Python deps (`cryptography`, `rich`). No system packages, no Docker.
-- **Crypto:** Ed25519, SHA-256, canonical JSON. Standard primitives via Python's `cryptography` library — same one Django and AWS CLI use.
-- **Surface area:** 225 lines for the demo, 60 for the verifier. Audit-readable in an afternoon. Production library: 184 tests, MIT.
-- **Scaling:** one receipt or a billion, same primitive. Append-only JSON, your existing S3 + lifecycle policy handles storage.
-- **Verification cost:** O(1) per receipt for signature + hash. Chain validation is O(n), trivially parallel.
-- **Vendor dependency at verify-time:** zero.
+I am building this fractionally with founders. The shape that has worked:
 
----
+Two days a week, three months, scoped engagement. I do the wrap, the key rollout with your customer, and the integration into your stack. Your engineering does not lose roadmap time to audit infrastructure.
 
-## Workflows Covered
+I work directly with your customer on key management and verification handoff. Their concerns get addressed by design, not deferred to your support team. They end up with portable evidence they own.
 
-1. Prior authorization submission *(shown)*
-2. Claims submission and denial appeals
-3. Eligibility verification and benefit checks
-4. Patient intake and referral routing
+The value lands in three places. Your sales team gets a receipt to hand every prospect, which collapses "show me what your agent does" into a link. Your FDE hours stop being spent on case reconstruction, audit explanation, and procurement Q&A. The audit layer stops being something your engineering maintains as a side product of your real product.
 
-Same primitive, different `action` strings and payload schemas.
+Pricing flexes to fit how you measure value. The first call is to figure out whether the cost the receipts collapse is real for you. The second call, if it is, is to scope the engagement and start.
 
 ---
 
-## Why
-
-no-BS evidence report your agent produces for the clinic - that the clinic hands to a payer, a hospital network, an auditor, or an insurnance carrier without you in the loop. Independently verfiable, no need to compensate with compliance infrastructure. Extend the spec up and down the stack and control map and let the agent to the work.
-
-Not a SOC 2 platform, not a HITRUST cert, not a replacement for Vanta or Drata. Plugs in alongside them — the agent-action evidence layer those products don't produce on their own.
-
----
-
-## What's in this folder
-
-- `sample_output/` — pre-generated receipt + key, verifiable without running anything
-- `run_demo.py` — generate a fresh receipt
-- `verify.sh` — the offline verifier
-- `controls.md` — HIPAA + HITRUST CSF v11 mappings
-- `requirements.txt` — two dependencies
-
----
-
-## Repo
+## Repo and provenance
 
 [github.com/aniketh-maddipati/agentmint-python](https://github.com/aniketh-maddipati/agentmint-python)
 
-Threat modeled with [Bil Harmer](https://www.linkedin.com/in/bilharmer/). Primitive listed in [OWASP Agentic AI Security Top 10](https://genai.owasp.org/) led by [Ken Huang](https://www.linkedin.com/in/kenhuang8/). [Prescient Assurance](https://prescientassurance.com) (AIUC-1 audit firm) is evaluating the primitive in their healthcare AI cohort.
+Mappings to HIPAA Security Rule and HITRUST CSF v11 in [controls.md](controls.md). Threat modeled with [Bil Harmer](https://www.linkedin.com/in/bilharmer/). Primitive listed in [OWASP Agentic AI Security Top 10](https://genai.owasp.org/) led by [Ken Huang](https://www.linkedin.com/in/kenhuang8/). [Prescient Assurance](https://prescientassurance.com) (AIUC-1 audit firm) is evaluating in their healthcare AI cohort.
