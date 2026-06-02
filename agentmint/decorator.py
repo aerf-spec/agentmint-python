@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 import json
+import sys
 from pathlib import Path
 from contextvars import ContextVar
 from functools import wraps
 from typing import Callable, Optional, TypeVar
-from typing_extensions import ParamSpec
+
+if sys.version_info >= (3, 10):
+    from typing import ParamSpec
+else:
+    from typing_extensions import ParamSpec
 
 from .core import AgentMint, Receipt
 from .errors import AgentMintError
