@@ -82,7 +82,9 @@ def _require_non_empty_string(value: str, name: str, max_len: int) -> str:
     if not stripped:
         raise NotaryError("%s must not be empty" % name)
     if len(stripped) > max_len:
-        raise NotaryError("%s must be at most %d characters, got %d" % (name, max_len, len(stripped)))
+        raise NotaryError(
+            "%s must be at most %d characters, got %d" % (name, max_len, len(stripped))
+        )
     if any(ord(char) < 32 for char in stripped):
         raise NotaryError("%s contains control characters" % name)
     return stripped
@@ -134,7 +136,9 @@ def _public_key_pem(verify_key: VerifyKey) -> str:
     return "-----BEGIN PUBLIC KEY-----\n%s\n-----END PUBLIC KEY-----\n" % "\n".join(lines)
 
 
-def _sign_payload(signing_key: SigningKey, serializer: JCSSerializer, payload: Mapping[str, Any]) -> str:
+def _sign_payload(
+    signing_key: SigningKey, serializer: JCSSerializer, payload: Mapping[str, Any]
+) -> str:
     return signing_key.sign(serializer.canonicalize(payload)).signature.hex()
 
 
@@ -292,7 +296,11 @@ class EvidencePackage:
     def _write_receipts(self, archive: zipfile.ZipFile) -> None:
         for receipt in self._receipts:
             archive.writestr("receipts/%s.json" % receipt.id, receipt.to_json())
-            if receipt.timestamp_result and receipt.timestamp_result.tsq and receipt.timestamp_result.tsr:
+            if (
+                receipt.timestamp_result
+                and receipt.timestamp_result.tsq
+                and receipt.timestamp_result.tsr
+            ):
                 archive.writestr("receipts/%s.tsq" % receipt.id, receipt.timestamp_result.tsq)
                 archive.writestr("receipts/%s.tsr" % receipt.id, receipt.timestamp_result.tsr)
 
@@ -374,7 +382,9 @@ class EvidencePackage:
                 for item in source.infolist():
                     data = source.read(item.filename)
                     if item.filename == "VERIFY.sh":
-                        perms = stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH
+                        perms = (
+                            stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH
+                        )
                         item.external_attr = perms << 16
                     target.writestr(item, data)
         shutil.move(str(tmp_path), str(zip_path))
@@ -560,7 +570,9 @@ class Notary:
 
         return final_in_policy, final_reason, session_escalation, original_verdict
 
-    def _advance_session(self, action: str, agent: str, in_policy: bool, observed_at: str) -> tuple[dict[str, Any], ...]:
+    def _advance_session(
+        self, action: str, agent: str, in_policy: bool, observed_at: str
+    ) -> tuple[dict[str, Any], ...]:
         entry = {
             "action": action,
             "agent": agent,
@@ -573,7 +585,9 @@ class Notary:
                 self._session_counters[pattern] = self._session_counters.get(pattern, 0) + 1
         return tuple(list(self._session_trajectory)[-5:])
 
-    def _timestamp_for(self, payload: Mapping[str, Any], signature: str, enable_timestamp: bool) -> Optional[TimestampRecord]:
+    def _timestamp_for(
+        self, payload: Mapping[str, Any], signature: str, enable_timestamp: bool
+    ) -> Optional[TimestampRecord]:
         if not enable_timestamp:
             return None
         signed_payload = dict(payload)
@@ -597,7 +611,9 @@ class Notary:
         plan = plan or self._load_or_create_default_plan()
         agent = _require_non_empty_string(agent or self._agent, "agent", MAX_IDENTITY_LEN)
         action = _require_non_empty_string(action, "action", MAX_ACTION_LEN)
-        redacted_evidence, _modified_paths = self._redactor.redact(_require_evidence(evidence or {}))
+        redacted_evidence, _modified_paths = self._redactor.redact(
+            _require_evidence(evidence or {})
+        )
         evidence_bytes = self._serializer.canonicalize(redacted_evidence)
         evidence_hash = hashlib.sha512(evidence_bytes).hexdigest()
         observed_at = _utc_now().isoformat()
@@ -719,7 +735,9 @@ class Notary:
     def audit_tree(self, plan_id: str) -> dict[str, Any]:
         return {
             "plan_id": plan_id,
-            "children": [self.audit_tree(child_id) for child_id in self._child_plans.get(plan_id, [])],
+            "children": [
+                self.audit_tree(child_id) for child_id in self._child_plans.get(plan_id, [])
+            ],
         }
 
     def bootstrap(self) -> None:
@@ -730,7 +748,9 @@ class Notary:
             self._load_or_create_default_plan()
         if self._key_dir is not None and self._plan is not None:
             config_path = self._key_dir / "agentmint.json"
-            config_path.write_text(json.dumps({"default_plan_id": self._plan.id, "key_id": self.key_id}, indent=2))
+            config_path.write_text(
+                json.dumps({"default_plan_id": self._plan.id, "key_id": self.key_id}, indent=2)
+            )
 
     def export_evidence(self, output_dir: Path, certs_dir: Optional[Path] = None) -> Path:
         if not self._package:

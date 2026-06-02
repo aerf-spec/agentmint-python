@@ -24,7 +24,9 @@ class FieldRedactor:
         payload = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
         return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
-    def _walk(self, evidence: Mapping[str, Any], prefix: str, modified: list[str]) -> dict[str, Any]:
+    def _walk(
+        self, evidence: Mapping[str, Any], prefix: str, modified: list[str]
+    ) -> dict[str, Any]:
         result: MutableMapping[str, Any] = {}
         for key, value in evidence.items():
             path = "%s.%s" % (prefix, key) if prefix else str(key)

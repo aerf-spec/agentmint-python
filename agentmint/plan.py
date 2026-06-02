@@ -76,7 +76,9 @@ class Plan:
             checkpoints=tuple(checkpoints or ()),
         )
         serializer = JCSSerializer()
-        signature = key_provider.signing_key().sign(serializer.canonicalize(plan.signable_dict())).signature
+        signature = (
+            key_provider.signing_key().sign(serializer.canonicalize(plan.signable_dict())).signature
+        )
         return replace(plan, signature=signature.hex())
 
     @classmethod
@@ -101,7 +103,11 @@ class Plan:
         )
         child = replace(child, version=parent.version + 1, signature="")
         serializer = JCSSerializer()
-        signature = key_provider.signing_key().sign(serializer.canonicalize(child.signable_dict())).signature
+        signature = (
+            key_provider.signing_key()
+            .sign(serializer.canonicalize(child.signable_dict()))
+            .signature
+        )
         return replace(child, signature=signature.hex())
 
     def signable_dict(self) -> Mapping[str, Any]:
