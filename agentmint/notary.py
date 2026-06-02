@@ -32,7 +32,7 @@ import tempfile
 import uuid
 import zipfile
 from collections import deque
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any, Final, Optional, Sequence
@@ -41,14 +41,13 @@ from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey, VerifyKey
 from nacl.exceptions import BadSignatureError
 
-from .patterns import matches_pattern, in_scope
+from .patterns import matches_pattern
 from .types import EnforceMode
 from .timestamp import (
     TimestampResult,
     TimestampError,
     timestamp as ts_timestamp,
     fetch_ca_certs,
-    verify as ts_verify,
 )
 
 __all__ = [
@@ -144,7 +143,7 @@ def _public_key_pem(verify_key: VerifyKey) -> str:
     der = _SPKI_PREFIX + bytes(verify_key)
     b64 = base64.b64encode(der).decode()
     lines = [b64[i:i + 64] for i in range(0, len(b64), 64)]
-    return f"-----BEGIN PUBLIC KEY-----\n" + "\n".join(lines) + f"\n-----END PUBLIC KEY-----\n"
+    return "-----BEGIN PUBLIC KEY-----\n" + "\n".join(lines) + "\n-----END PUBLIC KEY-----\n"
 
 
 # ── Policy evaluation ─────────────────────────────────────
@@ -735,7 +734,7 @@ class Notary:
         self._session_id: str = str(uuid.uuid4())
         self._session_policy: Optional[dict[str, Any]] = session_policy
         self._session_counters: dict[str, int] = {}
-        self._session_trajectory: deque = deque(maxlen=20)
+        self._session_trajectory: deque[dict[str, Any]] = deque(maxlen=20)
         # Child plan tracking (delegation)
         self._child_plans: dict[str, list[str]] = {}
 
@@ -764,7 +763,7 @@ class Notary:
         scope: list[str],
         checkpoints: list[str] | None = None,
         delegates_to: list[str] | None = None,
-        ttl_seconds: int = DEFAULT_TTL,
+        ttl_seconds: Optional[int] = DEFAULT_TTL,
     ) -> PlanReceipt:
         """Create a signed plan receipt. Initializes the chain for this plan."""
         user = _require_non_empty_string(user, "user", MAX_IDENTITY_LEN)
@@ -772,12 +771,14 @@ class Notary:
         scope_t = _require_string_list(scope, "scope")
         checkpoints_t = _require_string_list(checkpoints, "checkpoints")
         delegates_t = _require_string_list(delegates_to, "delegates_to")
-        ttl = _clamp_ttl(ttl_seconds)
-
         now = _utc_now()
         plan_id = str(uuid.uuid4())
         issued_at = now.isoformat()
-        expires_at = (now + timedelta(seconds=ttl)).isoformat()
+        if ttl_seconds is None:
+            expires_at = datetime.max.replace(tzinfo=timezone.utc).isoformat()
+        else:
+            ttl = _clamp_ttl(ttl_seconds)
+            expires_at = (now + timedelta(seconds=ttl)).isoformat()
 
         # Build plan with placeholder signature — signable_dict() is
         # the single source of truth for what gets signed.
@@ -893,7 +894,7 @@ class Notary:
             and session_escalation.startswith("denied:")
         )
         final_in_policy = False if is_session_denied else evaluation.in_policy
-        final_reason = session_escalation if is_session_denied else evaluation.reason
+        final_reason = session_escalation or evaluation.reason if is_session_denied else evaluation.reason
 
         # Enforcement mode: shadow/warn evaluate fully but never block
         mode_str = self._mode.value
@@ -1170,18 +1171,18 @@ def _build_verify_script(receipts: list[NotarisedReceipt]) -> str:
             lines.append("FLAGGED=$((FLAGGED + 1))")
 
         if has_ts:
-            lines.append(f'if openssl ts -verify \\')
+            lines.append('if openssl ts -verify \\')
             lines.append(f'    -in "receipts/{rid}.tsr" \\')
             lines.append(f'    -queryfile "receipts/{rid}.tsq" \\')
-            lines.append(f'    -CAfile "freetsa_cacert.pem" \\')
-            lines.append(f'    -untrusted "freetsa_tsa.crt" \\')
-            lines.append(f'    > /dev/null 2>&1; then')
-            lines.append(f'  echo "  Timestamp: ✓ verified"')
-            lines.append(f'  VERIFIED=$((VERIFIED + 1))')
-            lines.append(f'else')
-            lines.append(f'  echo "  Timestamp: ✗ FAILED"')
-            lines.append(f'  FAILED=$((FAILED + 1))')
-            lines.append(f'fi')
+            lines.append('    -CAfile "freetsa_cacert.pem" \\')
+            lines.append('    -untrusted "freetsa_tsa.crt" \\')
+            lines.append('    > /dev/null 2>&1; then')
+            lines.append('  echo "  Timestamp: ✓ verified"')
+            lines.append('  VERIFIED=$((VERIFIED + 1))')
+            lines.append('else')
+            lines.append('  echo "  Timestamp: ✗ FAILED"')
+            lines.append('  FAILED=$((FAILED + 1))')
+            lines.append('fi')
         else:
             lines.append('echo "  Timestamp: (not requested)"')
 

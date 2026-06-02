@@ -1,17 +1,20 @@
-"""Decorator for protecting functions with receipts."""
+"""Decorators for protecting functions and emitting receipts."""
 
 from __future__ import annotations
+import json
+from pathlib import Path
 from contextvars import ContextVar
 from functools import wraps
-try:
-    from typing import Callable, Optional, TypeVar, ParamSpec
-except ImportError:
-    from typing_extensions import ParamSpec
-    from typing import Callable, Optional, TypeVar
+from typing import Callable, Optional, TypeVar
+from typing_extensions import ParamSpec
 
 from .core import AgentMint, Receipt
 from .errors import AgentMintError
 from . import console
+from .cli._config import default_config, load_config
+from .notary import Notary
+from .providers.plans import FilePlanStore
+from .providers.sinks import FileReceiptSink
 
 P = ParamSpec("P")
 T = TypeVar("T")
@@ -41,6 +44,58 @@ def get_receipt() -> Optional[Receipt]:
 def clear_receipt() -> None:
     """Clear the current receipt."""
     _current_receipt.set(None)
+
+
+def notarise(notary: Notary, action: str, agent: Optional[str] = None) -> Callable[[Callable[P, T]], Callable[P, T]]:
+    """Decorate a function and write a receipt after it runs."""
+
+    del notary
+
+    def decorator(func: Callable[P, T]) -> Callable[P, T]:
+        @wraps(func)
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+            result = func(*args, **kwargs)
+
+            try:
+                config = load_config()
+            except FileNotFoundError:
+                config = default_config(Path.cwd())
+
+            effective_notary = Notary(key=config.keystore_path)
+            plan_store = FilePlanStore(config.keystore_path.parent)
+            plan = plan_store.active()
+            if plan is None:
+                plan = effective_notary.create_plan(
+                    user="local",
+                    action="default",
+                    scope=["*"],
+                    ttl_seconds=3600,
+                )
+                plan_store.save(plan, "default", activate=True)
+
+            evidence = {"args": list(args), "kwargs": kwargs, "result": result}
+            try:
+                json.dumps(evidence)
+            except TypeError:
+                evidence = {
+                    "args": [repr(value) for value in args],
+                    "kwargs": {key: repr(value) for key, value in kwargs.items()},
+                    "result": repr(result),
+                }
+
+            receipt = effective_notary.notarise(
+                action=action,
+                agent=agent or func.__name__,
+                plan=plan,
+                evidence=evidence,
+                enable_timestamp=config.timestamper_type == "rfc3161",
+            )
+            FileReceiptSink(config.sink_path).write_receipt(receipt.id, receipt.to_json())
+            return result
+
+        return wrapper
+
+    return decorator
 
 
 def require_receipt(mint: AgentMint, action: str) -> Callable[[Callable[P, T]], Callable[P, T]]:

@@ -11,7 +11,7 @@ from nacl.signing import SigningKey
 from nacl.exceptions import BadSignatureError
 
 from .errors import ValidationError
-from .patterns import matches_pattern, in_scope
+from .patterns import in_scope
 from .types import DelegationStatus, DelegationResult
 from . import console
 
@@ -85,8 +85,8 @@ class Receipt:
     def short_id(self) -> str:
         return self.id[:8]
 
-    def to_dict(self) -> dict:
-        d = {
+    def to_dict(self) -> dict[str, object]:
+        d: dict[str, object] = {
             "jti": self.id,
             "sub": self.sub,
             "action": self.action,
@@ -159,7 +159,7 @@ class AgentMint:
         payload = json.dumps(receipt.to_dict(), sort_keys=True).encode()
         return self._key.sign(payload).signature.hex()
 
-    def _make_receipt(self, sub: str, action: str, ttl: int, **kwargs) -> Receipt:
+    def _make_receipt(self, sub: str, action: str, ttl: int, **kwargs: object) -> Receipt:
         now = _utc_now()
         exp = now + timedelta(seconds=_clamp_ttl(ttl))
         receipt = Receipt(
@@ -169,8 +169,9 @@ class AgentMint:
             issued_at=now.isoformat(),
             expires_at=exp.isoformat(),
             signature="",
-            **kwargs,
         )
+        for key, value in kwargs.items():
+            setattr(receipt, key, value)
         receipt.signature = self._sign(receipt)
         self._receipts[receipt.id] = receipt
         if not self._quiet:
@@ -272,7 +273,7 @@ class AgentMint:
         return DelegationResult(DelegationStatus.OK, receipt, tuple(chain + [receipt.id]))
 
     def _chain_ids(self, receipt: Receipt) -> list[str]:
-        chain = []
+        chain: list[str] = []
         current: Optional[Receipt] = receipt
         while current:
             chain.insert(0, current.id)
@@ -312,7 +313,7 @@ class AgentMint:
 
     def audit(self, receipt: Receipt) -> list[Receipt]:
         """Get full authorization chain from root to this receipt."""
-        chain = []
+        chain: list[Receipt] = []
         current: Optional[Receipt] = receipt
         while current:
             chain.insert(0, current)
