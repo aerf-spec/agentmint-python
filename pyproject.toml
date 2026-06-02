@@ -17,10 +17,11 @@ classifiers = [
 ]
 dependencies = [
     "pynacl>=1.5.0",
-    "click>=8.0",
-    "libcst>=1.0",
-    "rich>=13.0",
+    "requests>=2.31.0",
+    "typer>=0.12",
     "pyyaml>=6.0",
+    "tomli>=2.0;python_version<'3.11'",
+    "typing_extensions>=4.0;python_version<'3.10'",
 ]
 
 [project.optional-dependencies]
@@ -28,20 +29,14 @@ anthropic = ["anthropic>=0.85.0"]
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=5.0.0",
-    "libcst>=1.0",
     "jsonschema>=4.22.0",
     "mypy>=1.8.0",
     "ruff>=0.6.0",
     "pre-commit>=3.5.0",
     "pip-audit>=2.7.0",
+    "pexpect>=4.9.0",
 ]
-cli = [
-    # These are now core dependencies — cli extra kept for backwards compat
-    "click>=8.0",
-    "libcst>=1.0",
-    "rich>=13.0",
-    "pyyaml>=6.0",
-]
+cli = ["rich>=13.0", "watchdog>=4.0"]
 demos = [
     "elevenlabs>=2.38.0",
     "rich>=14.3.3",
@@ -49,7 +44,7 @@ demos = [
 ]
 
 [project.scripts]
-agentmint = "agentmint.cli.main:main"
+agentmint = "agentmint.cli.app:app"
 
 [project.urls]
 Homepage = "https://github.com/aniketh-maddipati/agentmint-python"
@@ -79,8 +74,6 @@ target-version = "py310"
 
 [tool.ruff.lint]
 ignore = [
-    # Existing code has legacy import placement and unused-symbol debt. The
-    # foundation PR starts the gate without changing runtime behavior further.
     "E401",
     "E402",
     "E722",

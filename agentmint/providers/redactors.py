@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from typing import Any, Mapping, MutableMapping, Sequence
-
-from agentmint.protocols import Redactor
+from typing import Any, Dict, Mapping, MutableMapping, Sequence, Tuple
 
 
 class FieldRedactor:
@@ -50,7 +48,7 @@ class FieldRedactor:
                 result[str(key)] = value
         return dict(result)
 
-    def redact(self, evidence: Mapping[str, Any]):
+    def redact(self, evidence: Mapping[str, Any]) -> Tuple[dict[str, Any], list[str]]:
         modified: list[str] = []
         return self._walk(evidence, "", modified), modified
 
@@ -58,8 +56,9 @@ class FieldRedactor:
 class NoRedactor:
     """Pass-through redactor."""
 
-    def redact(self, evidence: Mapping[str, Any]):
+    def redact(self, evidence: Mapping[str, Any]) -> Tuple[dict[str, Any], list[str]]:
         return dict(evidence), []
 
 
-__all__ = ["FieldRedactor", "NoRedactor", "Redactor"]
+class PassthroughRedactor(NoRedactor):
+    pass

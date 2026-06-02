@@ -1,18 +1,25 @@
 """Decorator helpers for AgentMint authorization and notarisation."""
 
 from __future__ import annotations
+import json
+import sys
+from pathlib import Path
 from contextvars import ContextVar
 from functools import wraps
+from typing import Any, Callable, Optional, TypeVar
 
-try:
-    from typing import Callable, Optional, TypeVar, ParamSpec
-except ImportError:
+if sys.version_info >= (3, 10):
+    from typing import ParamSpec
+else:
     from typing_extensions import ParamSpec
-    from typing import Callable, Optional, TypeVar
 
 from .core import AgentMint, Receipt
 from .errors import AgentMintError
 from . import console
+from .cli._config import default_config, load_config
+from .notary import Notary
+from .providers.plans import FilePlanStore
+from .providers.sinks import FileReceiptSink
 
 P = ParamSpec("P")
 T = TypeVar("T")
@@ -43,6 +50,92 @@ def get_receipt() -> Optional[Receipt]:
 def clear_receipt() -> None:
     """Clear the current receipt."""
     _current_receipt.set(None)
+
+
+def _default_plan_for_notary(notary: Notary) -> Any:
+    """Create a conservative local default plan for zero-config flows."""
+    return notary.create_plan(
+        user="local",
+        action="default",
+        scope=["*"],
+        ttl_seconds=3600,
+    )
+
+
+def notarise(
+    notary: Notary,
+    action: Optional[str] = None,
+    plan: Any = None,
+    agent: Optional[str] = None,
+    evidence: Any = None,
+    enable_timestamp: bool = True,
+) -> Callable[[Callable[P, T]], Callable[P, T]]:
+    """Decorate a function and emit a receipt after it runs.
+
+    When local AgentMint CLI config exists, this uses the active plan and writes
+    the receipt to the configured sink. Otherwise it falls back to the provided
+    notary and any explicit `plan` / `evidence` arguments.
+    """
+
+    def decorator(func: Callable[P, T]) -> Callable[P, T]:
+        @wraps(func)
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+            result = func(*args, **kwargs)
+
+            if callable(evidence):
+                receipt_evidence = evidence(*args, **kwargs, result=result)
+            elif evidence is None:
+                receipt_evidence = {"args": list(args), "kwargs": kwargs, "result": result}
+            else:
+                receipt_evidence = dict(evidence)
+
+            try:
+                json.dumps(receipt_evidence)
+            except TypeError:
+                receipt_evidence = {
+                    "args": [repr(value) for value in args],
+                    "kwargs": {key: repr(value) for key, value in kwargs.items()},
+                    "result": repr(result),
+                }
+
+            effective_action = action or func.__name__
+
+            try:
+                config = load_config()
+            except FileNotFoundError:
+                config = None
+
+            if config is not None and plan is None and evidence is None and action is not None:
+                effective_notary = Notary(key=config.keystore_path)
+                plan_store = FilePlanStore(config.keystore_path.parent)
+                active_plan = plan_store.active()
+                if active_plan is None:
+                    active_plan = _default_plan_for_notary(effective_notary)
+                    plan_store.save(active_plan, "default", activate=True)
+                receipt = effective_notary.notarise(
+                    action=effective_action,
+                    agent=agent or func.__name__,
+                    plan=active_plan,
+                    evidence=receipt_evidence,
+                    enable_timestamp=config.timestamper_type == "rfc3161",
+                )
+                FileReceiptSink(config.sink_path).write_receipt(receipt.id, receipt.to_json())
+            else:
+                effective_plan = plan if plan is not None else _default_plan_for_notary(notary)
+                receipt = notary.notarise(
+                    action=effective_action,
+                    agent=agent or func.__name__,
+                    plan=effective_plan,
+                    evidence=receipt_evidence,
+                    enable_timestamp=enable_timestamp,
+                )
+            wrapper.last_receipt = receipt  # type: ignore[attr-defined]
+            return result
+
+        wrapper.last_receipt = None  # type: ignore[attr-defined]
+        return wrapper
+
+    return decorator
 
 
 def require_receipt(mint: AgentMint, action: str) -> Callable[[Callable[P, T]], Callable[P, T]]:
@@ -79,47 +172,6 @@ def require_receipt(mint: AgentMint, action: str) -> Callable[[Callable[P, T]], 
             console.authorized(action, receipt.sub, receipt.id)
             return func(*args, **kwargs)
 
-        return wrapper
-
-    return decorator
-
-
-def notarise(
-    notary,
-    action: Optional[str] = None,
-    plan=None,
-    agent: Optional[str] = None,
-    evidence=None,
-    enable_timestamp: bool = True,
-) -> Callable[[Callable[P, T]], Callable[P, T]]:
-    """Decorator that records a receipt after a successful function call."""
-
-    def decorator(func: Callable[P, T]) -> Callable[P, T]:
-        @wraps(func)
-        def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-            result = func(*args, **kwargs)
-            if callable(evidence):
-                receipt_evidence = evidence(*args, **kwargs, result=result)
-            elif evidence is None:
-                receipt_evidence = {
-                    "function": func.__name__,
-                    "args": list(args),
-                    "kwargs": kwargs,
-                }
-            else:
-                receipt_evidence = dict(evidence)
-
-            receipt_action = action or func.__name__
-            wrapper.last_receipt = notary.notarise(
-                action=receipt_action,
-                agent=agent,
-                plan=plan,
-                evidence=receipt_evidence,
-                enable_timestamp=enable_timestamp,
-            )
-            return result
-
-        wrapper.last_receipt = None  # type: ignore[attr-defined]
         return wrapper
 
     return decorator

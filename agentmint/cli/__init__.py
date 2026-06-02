@@ -1,1 +1,1 @@
-"""agentmint.cli — scan codebases and add AgentMint enforcement."""
+"""AgentMint CLI package."""

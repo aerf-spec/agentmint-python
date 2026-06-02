@@ -1,90 +1,87 @@
-"""Protocol interfaces for the receipt runtime."""
+"""Protocol interfaces for the receipt runtime and CLI adapters."""
 
 from __future__ import annotations
 
-from typing import Any, Mapping, Optional, Protocol, Sequence, Tuple
+from pathlib import Path
+from typing import Any, Dict, Mapping, Optional, Protocol, Sequence, Tuple, runtime_checkable
 
 from nacl.signing import SigningKey, VerifyKey
 
 
+@runtime_checkable
 class KeyProvider(Protocol):
-    """Provide signing and verification material to receipt producers."""
+    def signing_key(self) -> SigningKey: ...
 
-    def signing_key(self) -> SigningKey:
-        """Return the active Ed25519 signing key."""
+    def verify_key(self) -> VerifyKey: ...
 
-    def verify_key(self) -> VerifyKey:
-        """Return the active Ed25519 verification key."""
+    def bootstrap(self) -> None: ...
 
-    def key_id(self) -> str:
-        """Return a stable, audit-safe identifier for the active signing key."""
+    def key_id(self) -> str: ...
 
-    def public_key(self) -> bytes:
-        """Return raw public verification bytes suitable for offline verification."""
+    def sign(self, payload: bytes) -> bytes: ...
+
+    def public_key(self) -> bytes: ...
 
 
+@runtime_checkable
+class ReceiptSink(Protocol):
+    def write_receipt(self, receipt_id: str, payload: str) -> Path: ...
+
+
+@runtime_checkable
 class Sink(Protocol):
-    """Persist receipts, plans, or exported evidence."""
+    def write(
+        self, name: str, payload: bytes, metadata: Optional[Mapping[str, Any]] = None
+    ) -> str: ...
 
-    def write(self, name: str, payload: bytes, metadata: Optional[Mapping[str, Any]] = None) -> str:
-        """Persist payload bytes and return an implementation-specific locator."""
+    def flush(self) -> None: ...
 
-    def flush(self) -> None:
-        """Flush any buffered state."""
-
-    def close(self) -> None:
-        """Release held resources."""
+    def close(self) -> None: ...
 
 
-class Policy(Protocol):
-    """Evaluate whether a requested action is allowed by the active scope."""
-
-    def evaluate(self, action: str, evidence: Mapping[str, Any], plan: Any) -> Any:
-        """Return a policy decision object for the action and evidence."""
-
-
-class Timestamper(Protocol):
-    """Attach optional independent time evidence to receipt payloads."""
-
-    def timestamp(self, payload: bytes) -> Any:
-        """Return timestamp evidence for canonical payload bytes."""
-
-
-class Serializer(Protocol):
-    """Encode and decode receipt payloads using deterministic canonical forms."""
-
-    def canonicalize(self, payload: Any) -> bytes:
-        """Serialize a payload to canonical bytes."""
-
-    def dumps(self, payload: Mapping[str, Any]) -> bytes:
-        """Serialize a payload to deterministic bytes."""
-
-    def loads(self, payload: bytes) -> Mapping[str, Any]:
-        """Deserialize canonical bytes into a mapping."""
-
-
+@runtime_checkable
 class PlanStore(Protocol):
-    """Persist and retrieve plan records by stable identifier."""
+    def save(self, plan: Any, name: str, activate: bool = False) -> None: ...
 
-    def save(self, plan_id: str, payload: Mapping[str, Any]) -> None:
-        """Persist a plan payload."""
+    def get(self, plan_id: str) -> Any: ...
 
-    def load(self, plan_id: str) -> Optional[Mapping[str, Any]]:
-        """Load a plan payload if present."""
+    def list(self) -> Sequence[Dict[str, Any]]: ...
 
+    def active(self) -> Optional[Any]: ...
 
-class ChainStore(Protocol):
-    """Track receipt chain state without requiring AgentMint infrastructure."""
-
-    def previous_hash(self, plan_id: str) -> Optional[str]:
-        """Return the previous receipt hash for a plan, if any."""
-
-    def append(self, plan_id: str, receipt_hash: Optional[str]) -> None:
-        """Record the newest receipt hash for a plan chain."""
+    def load(self, plan_id: str) -> Optional[Mapping[str, Any]]: ...
 
 
+@runtime_checkable
+class Timestamper(Protocol):
+    def is_external(self) -> bool: ...
+
+    def timestamp(self, payload: bytes) -> Any: ...
+
+
+@runtime_checkable
+class Serializer(Protocol):
+    def canonicalize(self, payload: Any) -> bytes: ...
+
+    def dumps(self, value: Any) -> str: ...
+
+    def loads(self, payload: bytes) -> Mapping[str, Any]: ...
+
+
+@runtime_checkable
 class Redactor(Protocol):
-    """Remove or transform sensitive fields before evidence is serialized."""
+    def redact(self, evidence: Mapping[str, Any]) -> Tuple[Mapping[str, Any], Sequence[str]]: ...
 
-    def redact(self, evidence: Mapping[str, Any]) -> Tuple[Mapping[str, Any], Sequence[str]]:
-        """Return redacted evidence and a list of modified paths."""
+
+@runtime_checkable
+class Policy(Protocol):
+    def allows(self, action: str, scope: Sequence[str]) -> bool: ...
+
+    def evaluate(self, action: str, evidence: Mapping[str, Any], plan: Any) -> Any: ...
+
+
+@runtime_checkable
+class Profile(Protocol):
+    profile_id: str
+
+    def render_evidence(self, evidence: Dict[str, Any]) -> Dict[str, Any]: ...

@@ -6,7 +6,10 @@ import json
 import math
 from typing import Any, Mapping
 
-from agentmint.protocols import Serializer
+
+class JsonSerializer:
+    def dumps(self, value: Any) -> str:
+        return json.dumps(value, indent=2, sort_keys=True)
 
 
 class JCSSerializer:
@@ -53,8 +56,7 @@ class JCSSerializer:
         text = json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
         if text.endswith(".0") and "e" not in text and "E" not in text:
             text = text[:-2]
-        text = text.replace("E", "e")
-        return text
+        return text.replace("E", "e")
 
     def dumps(self, payload: Mapping[str, Any]) -> bytes:
         return self.canonicalize(payload)
@@ -64,6 +66,3 @@ class JCSSerializer:
         if not isinstance(loaded, dict):
             raise TypeError("canonical payload must decode to an object")
         return loaded
-
-
-__all__ = ["JCSSerializer", "Serializer"]

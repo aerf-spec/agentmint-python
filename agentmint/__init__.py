@@ -1,24 +1,13 @@
-"""
-AgentMint — Independent notary for AI agent actions.
-Produces cryptographic receipts proving what an agent was authorized
-to do, and that the record was not altered after the fact.
-
-Quickstart (Notary — primary interface):
-    from agentmint.notary import Notary
-    notary = Notary()
-    plan = notary.create_plan(user="admin@co.com", action="ops", scope=["tts:*"])
-    receipt = notary.notarise(action="tts:standard:abc", agent="voice-agent",
-                              plan=plan, evidence={"voice_id": "abc"})
-    notary.export_evidence(Path("./evidence"))
-
-Scope layer (lightweight authorization checks):
-    from agentmint import AgentMint
-    mint = AgentMint()
-    receipt = mint.issue("deploy", "alice@co.com")
-    assert mint.verify(receipt)
-"""
+"""AgentMint public package exports."""
 
 from .core import AgentMint, Receipt, JtiStore
+from .notary import (
+    EvidencePackage,
+    Notary,
+    NotarisedReceipt,
+    PlanReceipt,
+    verify_chain,
+)
 from .errors import (
     AgentMintError,
     ValidationError,
@@ -39,14 +28,26 @@ from .decorator import (
 from .circuit_breaker import CircuitBreaker, BreakerResult
 from .sinks import FileSink, Sink, ConsoleOTelSink
 from .shield import scan, ShieldResult, Threat
+from . import verify
 
-__version__ = "0.1.0"
+Plan = PlanReceipt
+ReceiptRecord = NotarisedReceipt
+
+__version__ = "0.2.0"
 
 __all__ = [
     # Core
     "AgentMint",
     "Receipt",
     "JtiStore",
+    # Notary
+    "Notary",
+    "Plan",
+    "PlanReceipt",
+    "ReceiptRecord",
+    "NotarisedReceipt",
+    "EvidencePackage",
+    "verify_chain",
     # Types
     "DelegationStatus",
     "DelegationResult",
@@ -61,6 +62,7 @@ __all__ = [
     "AuthorizationError",
     "notarise",
     # Decorator
+    "notarise",
     "require_receipt",
     "set_receipt",
     "get_receipt",
@@ -76,4 +78,6 @@ __all__ = [
     "FileSink",
     "Sink",
     "ConsoleOTelSink",
+    # Verify helpers
+    "verify",
 ]

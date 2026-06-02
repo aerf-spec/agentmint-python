@@ -35,7 +35,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
-import requests
+import requests  # type: ignore[import-untyped]
+
+from ._privacy import record_network_call
 
 __all__ = [
     "TimestampError",
@@ -296,6 +298,7 @@ def _submit_tsq_with_retry(tsq: bytes, tsa_url: str = FREETSA_TSR_URL) -> bytes:
 
 def _submit_tsq(tsq: bytes, tsa_url: str = FREETSA_TSR_URL) -> bytes:
     """Submit a single timestamp query to FreeTSA."""
+    record_network_call("tsa")
     resp = requests.post(
         tsa_url,
         data=tsq,
@@ -316,7 +319,7 @@ def _submit_tsq(tsq: bytes, tsa_url: str = FREETSA_TSR_URL) -> bytes:
             f"  The response may be an error page, not a timestamp token."
         )
 
-    return resp.content
+    return bytes(resp.content)
 
 
 def _download_if_missing(path: Path, url: str, label: str) -> None:
@@ -324,6 +327,7 @@ def _download_if_missing(path: Path, url: str, label: str) -> None:
     if path.exists():
         return
     try:
+        record_network_call("tsa")
         resp = requests.get(url, timeout=HTTP_TIMEOUT_SECONDS)
         resp.raise_for_status()
         path.write_bytes(resp.content)

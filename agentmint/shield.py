@@ -140,7 +140,8 @@ _RAW: list[tuple[str, str, str, str]] = [
         "data_exfil",
         "injection",
         "block",
-        r"(?i)(?:send|post|upload|transmit|forward|exfiltrate)" r"\s+.{0,40}(?:to|at)\s+https?://",
+        r"(?i)(?:send|post|upload|transmit|forward|exfiltrate)"
+        r"\s+.{0,40}(?:to|at)\s+https?://",
     ),
     (
         "forget_instructions",
@@ -178,7 +179,7 @@ _RAW: list[tuple[str, str, str, str]] = [
     ("markdown_link_injection", "structural", "warn", r"!\[.*?\]\((?:javascript|data|vbscript):"),
 ]
 
-DEFAULT_PATTERNS: list[tuple[str, str, str, re.Pattern]] = [
+DEFAULT_PATTERNS: list[tuple[str, str, str, re.Pattern[str]]] = [
     (name, cat, sev, re.compile(rx, re.IGNORECASE)) for name, cat, sev, rx in _RAW
 ]
 
@@ -267,7 +268,7 @@ def _walk_strings(data: Any, prefix: str = "") -> Iterator[tuple[str, str]]:
 
 def scan(
     data: dict[str, Any] | str,
-    patterns: list[tuple[str, str, str, re.Pattern]] | None = None,
+    patterns: list[tuple[str, str, str, re.Pattern[str]]] | None = None,
     enable_fuzzy: bool = True,
     enable_entropy: bool = True,
 ) -> ShieldResult:

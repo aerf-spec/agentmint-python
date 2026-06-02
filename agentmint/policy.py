@@ -1,9 +1,10 @@
-"""Policy helpers for receipt evaluation."""
+"""Policy helpers for receipt evaluation and CLI diagnostics."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping
+from typing import Sequence
 
 from .patterns import matches_pattern
 
@@ -17,7 +18,12 @@ class PolicyDecision:
 
 
 class ScopeMatchPolicy:
-    """Default action policy based on scope, checkpoints, and delegates."""
+    """Scope-match policy used by the runtime and CLI health checks."""
+
+    name = "scope_match"
+
+    def allows(self, action: str, scope: Sequence[str]) -> bool:
+        return any(matches_pattern(action, pattern) for pattern in scope)
 
     def evaluate(self, action: str, evidence: Mapping[str, Any], plan: Any) -> PolicyDecision:
         if getattr(plan, "is_expired", False):
@@ -49,7 +55,7 @@ def evaluate_policy(
     plan_delegates: Sequence[str],
     plan_expired: bool,
 ) -> PolicyDecision:
-    """Compatibility helper retained for legacy callers and tests."""
+    """Compatibility helper retained for older callers and tests."""
 
     class _Plan:
         scope = tuple(plan_scope)

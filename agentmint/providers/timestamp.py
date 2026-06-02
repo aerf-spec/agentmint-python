@@ -5,11 +5,10 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from typing import Any, Optional, Tuple
 
-from agentmint.protocols import Timestamper
 from agentmint.timestamp import TimestampError, verify as verify_token
 from agentmint.timestamp import timestamp as issue_timestamp
-
 
 LOGGER = logging.getLogger(__name__)
 
@@ -38,8 +37,9 @@ class TimestampRecord:
         return data
 
 
-class NoTimestamper(Timestamper):
-    """Self-reported UTC timestamps with no network dependency."""
+class NoTimestamper:
+    def is_external(self) -> bool:
+        return False
 
     def timestamp(self, payload: bytes) -> TimestampRecord:
         del payload
@@ -47,16 +47,16 @@ class NoTimestamper(Timestamper):
         return TimestampRecord(observed_at=observed_at, source="self")
 
 
-class RFC3161Timestamper(Timestamper):
-    """RFC 3161 timestamper with graceful self-reported fallback."""
-
-    def __init__(self, url: str, timeout_seconds: int = 5) -> None:
+class RFC3161Timestamper:
+    def __init__(self, url: Optional[str]) -> None:
         self.url = url
-        self.timeout_seconds = timeout_seconds
-        self._fallback = NoTimestamper()
+
+    def is_external(self) -> bool:
+        return True
 
     def timestamp(self, payload: bytes) -> TimestampRecord:
-        del self.timeout_seconds
+        if not self.url:
+            return NoTimestamper().timestamp(payload)
         try:
             result = issue_timestamp(payload, url=self.url)
             return TimestampRecord(
@@ -70,10 +70,13 @@ class RFC3161Timestamper(Timestamper):
             )
         except TimestampError as exc:
             LOGGER.warning("TSA unreachable, falling back to self timestamp: %s", exc)
-            return self._fallback.timestamp(payload)
+            return NoTimestamper().timestamp(payload)
 
-    def verify(self, tsq_path, tsr_path, cacert_path, tsa_cert_path):  # pragma: no cover
+    def verify(
+        self,
+        tsq_path: Any,
+        tsr_path: Any,
+        cacert_path: Any,
+        tsa_cert_path: Any,
+    ) -> Tuple[bool, str]:  # pragma: no cover
         return verify_token(tsq_path, tsr_path, cacert_path, tsa_cert_path)
-
-
-__all__ = ["NoTimestamper", "RFC3161Timestamper", "TimestampRecord", "Timestamper"]
