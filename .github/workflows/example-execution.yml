@@ -34,6 +34,9 @@ jobs:
             python -m venv "$venv"
             "$venv/bin/python" -m pip install --upgrade pip
             "$venv/bin/python" -m pip install -e .
+            if [ -f "$example/requirements.txt" ]; then
+              "$venv/bin/python" -m pip install -r "$example/requirements.txt"
+            fi
             if ! (cd "$example" && "$venv/bin/python" "$entry"); then
               failed=1
               echo "FAIL $example"
@@ -48,4 +51,3 @@ jobs:
             echo "No examples with run_demo.py or main.py found."
           fi
           exit "$failed"
-

@@ -21,4 +21,3 @@ repos:
         entry: bash -c 'mypy --strict agentmint/ || true'
         language: system
         pass_filenames: false
-

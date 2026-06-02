@@ -19,4 +19,3 @@ jobs:
           python -m pip install -e ".[dev]"
       - name: Run pip-audit
         run: pip-audit
-
