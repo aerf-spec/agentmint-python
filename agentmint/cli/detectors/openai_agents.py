@@ -1,4 +1,5 @@
 """OpenAI Agents SDK detector: @function_tool, Agent(tools=[...])"""
+
 from __future__ import annotations
 from typing import List
 
@@ -40,13 +41,17 @@ class _Visitor(cst.CSTVisitor):
     def visit_FunctionDef(self, node: cst.FunctionDef) -> None:
         for dec in node.decorators:
             if decorator_name(dec) == "function_tool":
-                self.candidates.append(ToolCandidate(
-                    file=self.file_path, line=self._line(node),
-                    framework="openai-sdk", symbol=node.name.value,
-                    boundary="definition",
-                    confidence="high" if self.confirmed else "medium",
-                    detection_rule="@function_tool",
-                ))
+                self.candidates.append(
+                    ToolCandidate(
+                        file=self.file_path,
+                        line=self._line(node),
+                        framework="openai-sdk",
+                        symbol=node.name.value,
+                        boundary="definition",
+                        confidence="high" if self.confirmed else "medium",
+                        detection_rule="@function_tool",
+                    )
+                )
 
     def visit_Call(self, node: cst.Call) -> None:
         cn = call_name(node)
@@ -56,13 +61,17 @@ class _Visitor(cst.CSTVisitor):
             if node.args:
                 a = node.args[0].value
                 if isinstance(a, cst.Name):
-                    self.candidates.append(ToolCandidate(
-                        file=self.file_path, line=self._line(node),
-                        framework="openai-sdk", symbol=a.value,
-                        boundary="registration",
-                        confidence="high" if self.confirmed else "medium",
-                        detection_rule="function_tool()",
-                    ))
+                    self.candidates.append(
+                        ToolCandidate(
+                            file=self.file_path,
+                            line=self._line(node),
+                            framework="openai-sdk",
+                            symbol=a.value,
+                            boundary="registration",
+                            confidence="high" if self.confirmed else "medium",
+                            detection_rule="function_tool()",
+                        )
+                    )
 
     def _extract_tools(self, node: cst.Call) -> None:
         for arg in node.args:
@@ -70,20 +79,29 @@ class _Visitor(cst.CSTVisitor):
                 names = list_names(arg.value)
                 line = self._line(node)
                 for name in names:
-                    self.candidates.append(ToolCandidate(
-                        file=self.file_path, line=line,
-                        framework="openai-sdk", symbol=name,
-                        boundary="registration",
-                        confidence="high" if self.confirmed else "medium",
-                        detection_rule="tools=[...]",
-                    ))
+                    self.candidates.append(
+                        ToolCandidate(
+                            file=self.file_path,
+                            line=line,
+                            framework="openai-sdk",
+                            symbol=name,
+                            boundary="registration",
+                            confidence="high" if self.confirmed else "medium",
+                            detection_rule="tools=[...]",
+                        )
+                    )
                 if not names:
-                    self.candidates.append(ToolCandidate(
-                        file=self.file_path, line=line,
-                        framework="openai-sdk", symbol="<dynamic>",
-                        boundary="registration", confidence="low",
-                        detection_rule="Agent(tools=<dynamic>)",
-                    ))
+                    self.candidates.append(
+                        ToolCandidate(
+                            file=self.file_path,
+                            line=line,
+                            framework="openai-sdk",
+                            symbol="<dynamic>",
+                            boundary="registration",
+                            confidence="low",
+                            detection_rule="Agent(tools=<dynamic>)",
+                        )
+                    )
 
     def _line(self, node) -> int:
         try:

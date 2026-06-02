@@ -1,4 +1,5 @@
 """CrewAI agent — matches examples/crewai_demo.py and docs/crewai_integration.md."""
+
 from crewai import Agent, Task, Crew
 from crewai.tools import BaseTool, tool
 from crewai.hooks import before_tool_call, ToolCallHookContext
@@ -18,6 +19,7 @@ class S3Input(BaseModel):
 
 class S3Reader(BaseTool):
     """Read files from S3."""
+
     name: str = "s3_reader"
     description: str = "Read file from S3"
     args_schema: Type[BaseModel] = S3Input
@@ -28,6 +30,7 @@ class S3Reader(BaseTool):
 
 class FileWriterTool(BaseTool):
     """Write content to files."""
+
     name: str = "file_writer"
     description: str = "Write content to a file"
 

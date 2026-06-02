@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aerf-spec.org/schemas/aerf-v0.1.json",
+  "title": "AERF-EVIDENCE Receipt",
+  "description": "Agent Evidence Receipt Format — EVIDENCE profile, v0.1.0-draft.1. DRAFT — not yet stable. See SPEC.md §4 for the normative description.",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "plan_id",
+    "agent",
+    "action",
+    "in_policy",
+    "policy_reason",
+    "evidence_hash_sha512",
+    "evidence",
+    "observed_at",
+    "key_id",
+    "signature"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Receipt identifier (UUIDv4 in v0.1; identifier format under review per held decision C-15).",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "type": {
+      "type": "string",
+      "description": "Receipt profile discriminator. v0.1 ships only 'notarised_evidence'.",
+      "const": "notarised_evidence"
+    },
+    "plan_id": {
+      "type": "string",
+      "description": "UUIDv4 of the plan receipt this evidence references.",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "agent": {
+      "type": "string",
+      "description": "Asserted identity of the acting agent.",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "action": {
+      "type": "string",
+      "description": "Action being notarised. Charset: A-Z a-z 0-9 _ : . -",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_:.\\-]+$"
+    },
+    "in_policy": {
+      "type": "boolean",
+      "description": "Whether the action satisfied the plan's policy at observation time."
+    },
+    "policy_reason": {
+      "type": "string",
+      "description": "Human-readable explanation of the policy decision."
+    },
+    "evidence_hash_sha512": {
+      "type": "string",
+      "description": "SHA-512 hex digest of the canonical JSON encoding of the 'evidence' object. Algorithm declared via field-name suffix per locked decision C-3; see SPEC.md §6.2.",
+      "pattern": "^[0-9a-f]{128}$"
+    },
+    "evidence": {
+      "type": "object",
+      "description": "Inline evidence payload. Inlining is the v0.1 default (privacy considerations apply — see held decision C-8 and SPEC.md §4.5)."
+    },
+    "observed_at": {
+      "type": "string",
+      "description": "ISO 8601 timestamp when the action was observed. Self-reported in the base profile; production profile MUST anchor with RFC 3161 (locked decision C-11).",
+      "format": "date-time"
+    },
+    "key_id": {
+      "type": "string",
+      "description": "Identifier of the issuer's public key. v0.1 uses the first 16 hex chars of SHA-256(public_key) per held decision C-9.",
+      "pattern": "^[0-9a-f]{16}$"
+    },
+    "signature": {
+      "type": "string",
+      "description": "Ed25519 signature over the canonical JSON of the receipt with 'signature' and 'timestamp' fields removed. Hex-encoded, 128 chars.",
+      "pattern": "^[0-9a-f]{128}$"
+    },
+    "previous_receipt_hash": {
+      "type": ["string", "null"],
+      "description": "SHA-256 hex digest of the canonical PAYLOAD of the previous receipt in this plan's chain (locked decision C-7 — payload only, signature excluded). On the genesis receipt of a chain this field MUST be omitted entirely (locked decision C-6); presence with null or empty value is a conformance error in stable v0.1.",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "plan_signature": {
+      "type": "string",
+      "description": "Hex-encoded Ed25519 signature of the referenced plan receipt, copied for receipt→plan binding."
+    },
+    "agent_signature": {
+      "type": "string",
+      "description": "Optional second signature by the acting agent's own key (held decision C-12)."
+    },
+    "agent_key_id": {
+      "type": "string",
+      "description": "Key ID of the agent's signing key, when agent_signature is present."
+    },
+    "policy_hash": {
+      "type": "string",
+      "description": "SHA-256 hex digest of canonical {scope, checkpoints, delegates_to} of the plan.",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "output_hash": {
+      "type": "string",
+      "description": "SHA-256 hex digest of canonical action output, when supplied.",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Issuer-scoped session identifier."
+    },
+    "session_trajectory": {
+      "type": "array",
+      "description": "Recent action trace within the session (truncated by the issuer).",
+      "items": { "type": "object" }
+    },
+    "session_escalation": {
+      "type": ["string", "null"],
+      "description": "Escalation marker emitted by the session policy."
+    },
+    "reasoning_hash": {
+      "type": ["string", "null"],
+      "description": "SHA-256 hex digest of the UTF-8 reasoning text, when captured.",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "aiuc_controls": {
+      "type": "array",
+      "description": "DEPRECATED — superseded by 'compliance_tags' per locked decision C-14. Will be removed by v1.0.",
+      "items": { "type": "string" }
+    },
+    "compliance_tags": {
+      "type": "array",
+      "description": "Generic compliance tags (locked decision C-14). Replaces 'aiuc_controls'.",
+      "items": { "type": "string" }
+    },
+    "timestamp": {
+      "type": "object",
+      "description": "RFC 3161 timestamp token information. REQUIRED for the production profile (locked decision C-11), OPTIONAL in the base profile."
+    }
+  }
+}

@@ -12,6 +12,7 @@ import boto3
 os.environ["OTEL_SDK_DISABLED"] = "true"
 warnings.filterwarnings("ignore")
 import logging
+
 logging.getLogger().setLevel(logging.CRITICAL)
 
 from crewai import Agent, Task, Crew, Process
@@ -27,39 +28,46 @@ BUCKET = "agentmint-demo-1772509489"
 # REAL S3 TOOL
 # ════════════════════════════════════════════════════════════════
 
+
 class S3ReadInput(BaseModel):
     path: str = Field(description="S3 path to read, e.g. 'reports/q4-summary.txt'")
+
 
 class S3ReaderTool(BaseTool):
     name: str = "s3_reader"
     description: str = f"Read files from S3 bucket. Provide path like 'reports/file.txt' or 'confidential/data.csv'"
     args_schema: Type[BaseModel] = S3ReadInput
-    
+
     def _run(self, path: str) -> str:
-        s3 = boto3.client('s3')
+        s3 = boto3.client("s3")
         try:
             response = s3.get_object(Bucket=BUCKET, Key=path)
-            content = response['Body'].read().decode('utf-8')
+            content = response["Body"].read().decode("utf-8")
             return f"[S3:{path}]\n{content}"
         except Exception as e:
             return f"Error reading {path}: {e}"
+
 
 # ════════════════════════════════════════════════════════════════
 # DEMO
 # ════════════════════════════════════════════════════════════════
 
-print("""
+print(
+    """
 ════════════════════════════════════════════════════════════════
  AgentMint + CrewAI: Real AWS Demo
  Delegation chains with scope attenuation
 ════════════════════════════════════════════════════════════════
 
-S3 Bucket: """ + BUCKET + """
+S3 Bucket: """
+    + BUCKET
+    + """
 ├── reports/q4-summary.txt (public)
 └── confidential/
     ├── credentials.txt (secrets)
     └── customers-pii.csv (PII)
-""")
+"""
+)
 
 s3_tool = S3ReaderTool()
 mint = AgentMint(quiet=True)
@@ -97,7 +105,7 @@ task2 = Task(
 )
 
 _stderr = sys.stderr
-sys.stderr = open(os.devnull, 'w')
+sys.stderr = open(os.devnull, "w")
 
 print("Agent reads reports/q4-summary.txt...")
 result1 = Crew(agents=[analyst], tasks=[task1], verbose=False).kickoff()
@@ -172,41 +180,47 @@ print()
 audit_trail = []
 blocked = []
 
+
 @before_tool_call
 def gate(ctx: ToolCallHookContext) -> bool | None:
     if ctx.tool_name != "s3_reader":
         return None
-    
+
     agent = ctx.agent.role if ctx.agent else "unknown"
     path = ctx.tool_input.get("path", "")
-    
+
     # Convert S3 path to action
     parts = path.replace("/", ":").rstrip(":")
     action = f"s3:read:{parts}"
-    
+
     # Check against analyst's narrowed scope
     result = mint.delegate(parent=analyst_scope, agent=agent, action=action)
-    
+
     if result.ok:
-        audit_trail.append({
-            "agent": agent,
-            "action": action,
-            "receipt": result.receipt.short_id,
-            "chain": f"ciso → research-lead → {agent}",
-        })
+        audit_trail.append(
+            {
+                "agent": agent,
+                "action": action,
+                "receipt": result.receipt.short_id,
+                "chain": f"ciso → research-lead → {agent}",
+            }
+        )
         print(f"  ✓ {agent} → {action}")
         print(f"    Chain: ciso → research-lead → {agent}")
         print(f"    Receipt: {result.receipt.short_id}")
         return None
     else:
-        blocked.append({
-            "agent": agent,
-            "action": action,
-            "reason": result.status.value,
-        })
+        blocked.append(
+            {
+                "agent": agent,
+                "action": action,
+                "reason": result.status.value,
+            }
+        )
         print(f"  ✗ {agent} → {action}")
         print(f"    Blocked: {result.status.value}")
         return False
+
 
 # Recreate agent
 analyst = Agent(
@@ -221,7 +235,7 @@ analyst = Agent(
 print("Agent attempts:")
 print()
 
-sys.stderr = open(os.devnull, 'w')
+sys.stderr = open(os.devnull, "w")
 
 # Attempt 1: Read public report (should succeed)
 task_public = Task(

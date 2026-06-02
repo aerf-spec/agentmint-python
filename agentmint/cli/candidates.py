@@ -8,6 +8,7 @@ trailing :* for hierarchy wildcards.
     "tool:*"                — all tools
     "s3:read:reports:*"     — all report reads
 """
+
 from __future__ import annotations
 
 import re
@@ -18,11 +19,20 @@ from typing import List, Optional
 # ── Verb → operation mapping ─────────────────────────────────────
 
 _PATTERNS = [
-    ("delete",  re.compile(r"^(delete|remove|drop|purge|destroy|revoke)_", re.I)),
-    ("exec",    re.compile(r"^(execute|run|invoke|call|trigger|dispatch|send|emit)_", re.I)),
+    ("delete", re.compile(r"^(delete|remove|drop|purge|destroy|revoke)_", re.I)),
+    ("exec", re.compile(r"^(execute|run|invoke|call|trigger|dispatch|send|emit)_", re.I)),
     ("network", re.compile(r"^(http|request|api|webhook|ping|curl)_", re.I)),
-    ("write",   re.compile(r"^(write|save|store|create|insert|update|upsert|put|set|upload|post)_", re.I)),
-    ("read",    re.compile(r"^(get|fetch|load|read|search|query|list|find|lookup|retrieve|check|inspect|describe)_", re.I)),
+    (
+        "write",
+        re.compile(r"^(write|save|store|create|insert|update|upsert|put|set|upload|post)_", re.I),
+    ),
+    (
+        "read",
+        re.compile(
+            r"^(get|fetch|load|read|search|query|list|find|lookup|retrieve|check|inspect|describe)_",
+            re.I,
+        ),
+    ),
 ]
 
 _VERB_PREFIX = re.compile(
@@ -30,7 +40,8 @@ _VERB_PREFIX = re.compile(
     r"inspect|describe|write|save|store|create|insert|update|upsert|put|"
     r"set|upload|post|delete|remove|drop|purge|destroy|revoke|execute|"
     r"run|invoke|call|trigger|dispatch|send|emit|http|request|api|"
-    r"webhook|ping|curl)_", re.I,
+    r"webhook|ping|curl)_",
+    re.I,
 )
 
 
@@ -69,16 +80,16 @@ class ToolCandidate:
 
     file: str
     line: int
-    framework: str          # langgraph | openai-sdk | crewai | mcp | adk | raw
-    symbol: str             # function or class name
-    boundary: str           # "definition" or "registration"
+    framework: str  # langgraph | openai-sdk | crewai | mcp | adk | raw
+    symbol: str  # function or class name
+    boundary: str  # "definition" or "registration"
     operation_guess: str = ""
     resource_guess: str = ""
     confidence: str = "high"
     scope_suggestion: str = ""
     detection_rule: str = ""
     base_classes: List[str] = field(default_factory=list)
-    risk_level: str = ""    # LOW | MEDIUM | HIGH | CRITICAL — set in __post_init__
+    risk_level: str = ""  # LOW | MEDIUM | HIGH | CRITICAL — set in __post_init__
 
     def __post_init__(self):
         if not self.operation_guess:
@@ -91,6 +102,7 @@ class ToolCandidate:
             )
         if not self.risk_level:
             from .risk import classify_risk
+
             self.risk_level = classify_risk(self).label
 
     def to_dict(self) -> dict:

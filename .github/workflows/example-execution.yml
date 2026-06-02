@@ -1,0 +1,51 @@
+name: Example Execution
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  examples:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run examples in fresh virtual environments
+        run: |
+          set -euo pipefail
+          found=0
+          failed=0
+          for example in examples/*; do
+            [ -d "$example" ] || continue
+            entry=""
+            if [ -f "$example/run_demo.py" ]; then
+              entry="run_demo.py"
+            elif [ -f "$example/main.py" ]; then
+              entry="main.py"
+            else
+              continue
+            fi
+
+            found=1
+            echo "::group::$example"
+            venv="$(mktemp -d)"
+            python -m venv "$venv"
+            "$venv/bin/python" -m pip install --upgrade pip
+            "$venv/bin/python" -m pip install -e .
+            if ! (cd "$example" && "$venv/bin/python" "$entry"); then
+              failed=1
+              echo "FAIL $example"
+            else
+              echo "PASS $example"
+            fi
+            rm -rf "$venv"
+            echo "::endgroup::"
+          done
+
+          if [ "$found" -eq 0 ]; then
+            echo "No examples with run_demo.py or main.py found."
+          fi
+          exit "$failed"
+

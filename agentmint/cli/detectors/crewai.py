@@ -1,4 +1,5 @@
 """CrewAI detector: @tool, BaseTool, Agent/Task(tools=[...]), @before_tool_call"""
+
 from __future__ import annotations
 from typing import List, Sequence
 
@@ -40,23 +41,32 @@ class _Visitor(cst.CSTVisitor):
         for dec in node.decorators:
             dn = decorator_name(dec)
             if dn == "tool":
-                self.candidates.append(ToolCandidate(
-                    file=self.file_path, line=self._line(node),
-                    framework="crewai", symbol=node.name.value,
-                    boundary="definition",
-                    confidence="high" if self.confirmed else "low",
-                    detection_rule="@tool",
-                ))
+                self.candidates.append(
+                    ToolCandidate(
+                        file=self.file_path,
+                        line=self._line(node),
+                        framework="crewai",
+                        symbol=node.name.value,
+                        boundary="definition",
+                        confidence="high" if self.confirmed else "low",
+                        detection_rule="@tool",
+                    )
+                )
             elif dn == "before_tool_call":
-                self.candidates.append(ToolCandidate(
-                    file=self.file_path, line=self._line(node),
-                    framework="crewai", symbol=node.name.value,
-                    boundary="definition",
-                    confidence="high" if self.confirmed else "medium",
-                    detection_rule="@before_tool_call (gate)",
-                    operation_guess="gate", resource_guess="hook",
-                    scope_suggestion="hook:before_tool_call",
-                ))
+                self.candidates.append(
+                    ToolCandidate(
+                        file=self.file_path,
+                        line=self._line(node),
+                        framework="crewai",
+                        symbol=node.name.value,
+                        boundary="definition",
+                        confidence="high" if self.confirmed else "medium",
+                        detection_rule="@before_tool_call (gate)",
+                        operation_guess="gate",
+                        resource_guess="hook",
+                        scope_suggestion="hook:before_tool_call",
+                    )
+                )
 
     def visit_ClassDef(self, node: cst.ClassDef) -> None:
         bases = base_class_names(node.bases)
@@ -68,14 +78,18 @@ class _Visitor(cst.CSTVisitor):
                 if isinstance(stmt, cst.FunctionDef) and stmt.name.value == "_run":
                     has_run = True
                     break
-        self.candidates.append(ToolCandidate(
-            file=self.file_path, line=self._line(node),
-            framework="crewai", symbol=node.name.value,
-            boundary="definition",
-            confidence="high" if has_run else "medium",
-            detection_rule="BaseTool subclass",
-            base_classes=bases,
-        ))
+        self.candidates.append(
+            ToolCandidate(
+                file=self.file_path,
+                line=self._line(node),
+                framework="crewai",
+                symbol=node.name.value,
+                boundary="definition",
+                confidence="high" if has_run else "medium",
+                detection_rule="BaseTool subclass",
+                base_classes=bases,
+            )
+        )
 
     def visit_Call(self, node: cst.Call) -> None:
         cn = call_name(node)
@@ -86,13 +100,17 @@ class _Visitor(cst.CSTVisitor):
                 names = list_names(arg.value)
                 line = self._line(node)
                 for name in names:
-                    self.candidates.append(ToolCandidate(
-                        file=self.file_path, line=line,
-                        framework="crewai", symbol=name,
-                        boundary="registration",
-                        confidence="high" if self.confirmed else "medium",
-                        detection_rule=f"{cn}(tools=[...])",
-                    ))
+                    self.candidates.append(
+                        ToolCandidate(
+                            file=self.file_path,
+                            line=line,
+                            framework="crewai",
+                            symbol=name,
+                            boundary="registration",
+                            confidence="high" if self.confirmed else "medium",
+                            detection_rule=f"{cn}(tools=[...])",
+                        )
+                    )
 
     def _line(self, node) -> int:
         try:

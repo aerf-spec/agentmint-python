@@ -54,6 +54,7 @@ def _utc_now() -> datetime:
 @dataclass()
 class Receipt:
     """A signed authorization receipt."""
+
     id: str
     sub: str
     action: str
@@ -114,6 +115,7 @@ class Receipt:
 
 class JtiStore:
     """Single-use JTI tracking for replay protection."""
+
     __slots__ = ("_used", "_capacity")
 
     def __init__(self, capacity: int = MAX_JTI_CAPACITY):
@@ -146,6 +148,7 @@ class AgentMint:
         receipt = mint.issue("deploy", "alice@co.com")
         assert mint.verify(receipt)
     """
+
     __slots__ = ("_key", "_vk", "_receipts", "_jti", "_quiet")
 
     def __init__(self, quiet: bool = False):
@@ -197,7 +200,9 @@ class AgentMint:
         _validate_sub(user)
         _validate_action(action)
         return self._make_receipt(
-            user, action, ttl,
+            user,
+            action,
+            ttl,
             receipt_type="plan",
             scope=scope,
             delegates_to=delegates_to,
@@ -217,7 +222,9 @@ class AgentMint:
             if not self._quiet:
                 console.delegate_deny(agent, action, "agent_not_authorized")
             return DelegationResult(
-                DelegationStatus.DENIED_AGENT, None, tuple(chain),
+                DelegationStatus.DENIED_AGENT,
+                None,
+                tuple(chain),
                 f"agent '{agent}' not in delegates_to",
             )
 
@@ -228,7 +235,9 @@ class AgentMint:
             if not self._quiet:
                 console.delegate_deny(agent, action, "max_depth_exceeded")
             return DelegationResult(
-                DelegationStatus.DENIED_DEPTH, None, tuple(chain),
+                DelegationStatus.DENIED_DEPTH,
+                None,
+                tuple(chain),
                 f"depth {depth} >= max {max_depth}",
             )
 
@@ -237,7 +246,9 @@ class AgentMint:
             if not self._quiet:
                 console.checkpoint(agent, action)
             return DelegationResult(
-                DelegationStatus.CHECKPOINT, None, tuple(chain),
+                DelegationStatus.CHECKPOINT,
+                None,
+                tuple(chain),
                 f"action '{action}' requires human approval",
             )
 
@@ -246,7 +257,9 @@ class AgentMint:
             if not self._quiet:
                 console.delegate_deny(agent, action, "action_not_in_scope")
             return DelegationResult(
-                DelegationStatus.DENIED_SCOPE, None, tuple(chain),
+                DelegationStatus.DENIED_SCOPE,
+                None,
+                tuple(chain),
                 f"action '{action}' not in scope",
             )
 
@@ -256,7 +269,9 @@ class AgentMint:
         ttl = int(max(1, min(300, remaining)))
 
         receipt = self._make_receipt(
-            agent, action, ttl,
+            agent,
+            action,
+            ttl,
             receipt_type="delegated",
             scope=parent.scope,
             delegates_to=parent.delegates_to,

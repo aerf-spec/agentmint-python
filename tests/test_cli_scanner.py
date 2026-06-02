@@ -4,6 +4,7 @@ test_cli_scanner.py — Tests for agentmint init scanner.
 Validates all framework detectors against fixture files that mirror
 the real integration patterns from examples/ and docs/.
 """
+
 from __future__ import annotations
 
 import sys
@@ -15,7 +16,10 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from agentmint.cli.candidates import (
-    ToolCandidate, guess_operation, guess_resource, suggest_scope,
+    ToolCandidate,
+    guess_operation,
+    guess_resource,
+    suggest_scope,
 )
 from agentmint.cli.scanner import scan_file
 from agentmint.cli.patcher import generate_yaml, generate_patch_instructions
@@ -27,8 +31,9 @@ def load(name: str) -> str:
     return (FIXTURES / name).read_text()
 
 
-def find(candidates: List[ToolCandidate], symbol: str,
-         boundary: Optional[str] = None) -> Optional[ToolCandidate]:
+def find(
+    candidates: List[ToolCandidate], symbol: str, boundary: Optional[str] = None
+) -> Optional[ToolCandidate]:
     for c in candidates:
         if c.symbol == symbol:
             if boundary is None or c.boundary == boundary:
@@ -40,31 +45,38 @@ def find(candidates: List[ToolCandidate], symbol: str,
 # Heuristic tests
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestHeuristics:
-    @pytest.mark.parametrize("name,expected", [
-        ("search_docs", "read"),
-        ("fetch_market_data", "read"),
-        ("save_results", "write"),
-        ("delete_old_index", "delete"),
-        ("execute_trade", "exec"),
-        ("send_notification", "exec"),
-        ("http_request", "network"),
-        ("helper_function", "unknown"),
-        ("process_data", "unknown"),
-    ])
+    @pytest.mark.parametrize(
+        "name,expected",
+        [
+            ("search_docs", "read"),
+            ("fetch_market_data", "read"),
+            ("save_results", "write"),
+            ("delete_old_index", "delete"),
+            ("execute_trade", "exec"),
+            ("send_notification", "exec"),
+            ("http_request", "network"),
+            ("helper_function", "unknown"),
+            ("process_data", "unknown"),
+        ],
+    )
     def test_guess_operation(self, name, expected):
         assert guess_operation(name) == expected
 
-    @pytest.mark.parametrize("name,expected", [
-        ("search_docs", "docs"),
-        ("fetch_market_data", "market:data"),
-        ("save_results", "results"),
-        ("delete_old_index", "old:index"),
-        ("execute_trade", "trade"),
-        ("S3Reader", "s3:reader"),
-        ("FileWriterTool", "file:writer"),
-        ("helper_function", "*"),
-    ])
+    @pytest.mark.parametrize(
+        "name,expected",
+        [
+            ("search_docs", "docs"),
+            ("fetch_market_data", "market:data"),
+            ("save_results", "results"),
+            ("delete_old_index", "old:index"),
+            ("execute_trade", "trade"),
+            ("S3Reader", "s3:reader"),
+            ("FileWriterTool", "file:writer"),
+            ("helper_function", "*"),
+        ],
+    )
     def test_guess_resource(self, name, expected):
         assert guess_resource(name) == expected
 
@@ -77,6 +89,7 @@ class TestHeuristics:
 # ═══════════════════════════════════════════════════════════════
 # LangGraph
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestLangGraph:
     @pytest.fixture
@@ -116,6 +129,7 @@ class TestLangGraph:
 # OpenAI Agents SDK
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestOpenAI:
     @pytest.fixture
     def candidates(self):
@@ -131,14 +145,22 @@ class TestOpenAI:
 
     def test_finds_agent_registrations(self, candidates):
         """Agent(tools=[...]) should detect all registered tools."""
-        regs = [c for c in candidates
-                if c.boundary == "registration" and c.detection_rule == "tools=[...]"]
+        regs = [
+            c
+            for c in candidates
+            if c.boundary == "registration" and c.detection_rule == "tools=[...]"
+        ]
         reg_names = {c.symbol for c in regs}
         # main_agent has get_weather, lookup_account
         # trading_agent has fetch_market_data, execute_trade
         # notification_agent has send_notification
-        assert {"get_weather", "lookup_account", "fetch_market_data",
-                "execute_trade", "send_notification"} <= reg_names
+        assert {
+            "get_weather",
+            "lookup_account",
+            "fetch_market_data",
+            "execute_trade",
+            "send_notification",
+        } <= reg_names
 
     def test_all_openai_framework(self, candidates):
         """Everything in this file should be openai-sdk or raw."""
@@ -149,6 +171,7 @@ class TestOpenAI:
 # ═══════════════════════════════════════════════════════════════
 # CrewAI
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestCrewAI:
     @pytest.fixture
@@ -174,8 +197,7 @@ class TestCrewAI:
         assert c.confidence == "high"  # has _run()
 
     def test_finds_agent_registration(self, candidates):
-        regs = [c for c in candidates
-                if c.boundary == "registration" and c.framework == "crewai"]
+        regs = [c for c in candidates if c.boundary == "registration" and c.framework == "crewai"]
         reg_names = {c.symbol for c in regs}
         assert "search_web" in reg_names
 
@@ -186,22 +208,28 @@ class TestCrewAI:
 
     def test_task_registration(self, candidates):
         """Task(tools=[...]) should be detected as a separate registration site."""
-        regs = [c for c in candidates
-                if c.boundary == "registration"
-                and c.detection_rule == "Task(tools=[...])"]
+        regs = [
+            c
+            for c in candidates
+            if c.boundary == "registration" and c.detection_rule == "Task(tools=[...])"
+        ]
         assert len(regs) > 0
         assert regs[0].symbol == "FileWriterTool"
         # Should be on a different line than the Agent registration
-        agent_regs = [c for c in candidates
-                      if c.boundary == "registration"
-                      and c.detection_rule == "Agent(tools=[...])"
-                      and c.symbol == "FileWriterTool"]
+        agent_regs = [
+            c
+            for c in candidates
+            if c.boundary == "registration"
+            and c.detection_rule == "Agent(tools=[...])"
+            and c.symbol == "FileWriterTool"
+        ]
         assert agent_regs[0].line != regs[0].line
 
 
 # ═══════════════════════════════════════════════════════════════
 # Raw / fallback detector
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestRawDetector:
     @pytest.fixture
@@ -232,6 +260,7 @@ class TestRawDetector:
 # Deduplication
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestDeduplication:
     def test_no_duplicates(self):
         source = load("langgraph_agent.py")
@@ -247,9 +276,11 @@ class TestDeduplication:
 # YAML generation
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestYAML:
     def test_generates_valid_yaml(self):
         import yaml
+
         candidates = scan_file("langgraph_agent.py", load("langgraph_agent.py"))
         content = generate_yaml(candidates)
         parsed = yaml.safe_load(content)
@@ -262,6 +293,7 @@ class TestYAML:
     def test_yaml_contains_only_facts(self):
         """YAML should contain provable facts, no heuristic guesses."""
         import yaml
+
         candidates = scan_file("langgraph_agent.py", load("langgraph_agent.py"))
         content = generate_yaml(candidates)
         parsed = yaml.safe_load(content)
@@ -279,6 +311,7 @@ class TestYAML:
 # Patch instructions
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestPatchInstructions:
     def test_definitions_get_notarise(self):
         candidates = scan_file("langgraph_agent.py", load("langgraph_agent.py"))
@@ -294,11 +327,17 @@ class TestPatchInstructions:
         assert len(regs) > 0
 
     def test_low_confidence_gets_manual_review(self):
-        candidates = [ToolCandidate(
-            file="test.py", line=1, framework="raw",
-            symbol="ambiguous", boundary="definition",
-            confidence="low", detection_rule="name heuristic",
-        )]
+        candidates = [
+            ToolCandidate(
+                file="test.py",
+                line=1,
+                framework="raw",
+                symbol="ambiguous",
+                boundary="definition",
+                confidence="low",
+                detection_rule="name heuristic",
+            )
+        ]
         instructions = generate_patch_instructions(candidates)
         assert instructions[0]["action"] == "manual_review"
 
@@ -306,6 +345,7 @@ class TestPatchInstructions:
 # ═══════════════════════════════════════════════════════════════
 # MCP detector
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestMCP:
     @pytest.fixture
@@ -321,8 +361,7 @@ class TestMCP:
             assert c.confidence == "high"
 
     def test_no_false_positives(self, candidates):
-        assert find(candidates, "helper") is None or \
-            find(candidates, "helper").framework != "mcp"
+        assert find(candidates, "helper") is None or find(candidates, "helper").framework != "mcp"
 
     def test_scope_guesses(self, candidates):
         c = find(candidates, "read_receipt")
@@ -337,27 +376,27 @@ class TestMCP:
 # Extended CrewAI coverage
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestCrewAIExtended:
     def test_crew_tools_registration(self):
         """Crew(agents=[...]) doesn't directly register tools,
         but Agent(tools=[...]) inside it should still be detected."""
-        source = '''
+        source = """
 from crewai import Agent, Crew
 
 def my_search(q): return q
 
 agent = Agent(role="r", tools=[my_search])
 crew = Crew(agents=[agent])
-'''
+"""
         candidates = scan_file("test.py", source)
-        regs = [c for c in candidates
-                if c.symbol == "my_search" and c.boundary == "registration"]
+        regs = [c for c in candidates if c.symbol == "my_search" and c.boundary == "registration"]
         assert len(regs) == 1
         assert regs[0].framework == "crewai"
 
     def test_basetool_with_args_schema(self):
         """BaseTool with Pydantic args_schema should still be detected."""
-        source = '''
+        source = """
 from crewai.tools import BaseTool
 from pydantic import BaseModel
 
@@ -371,7 +410,7 @@ class SearchTool(BaseTool):
 
     def _run(self, query: str) -> str:
         return query
-'''
+"""
         candidates = scan_file("test.py", source)
         c = find(candidates, "SearchTool", "definition")
         assert c is not None
@@ -380,13 +419,13 @@ class SearchTool(BaseTool):
 
     def test_structured_tool_subclass(self):
         """StructuredTool should also be detected."""
-        source = '''
+        source = """
 from crewai.tools import StructuredTool
 
 class MyTool(StructuredTool):
     name: str = "my_tool"
     def _run(self): pass
-'''
+"""
         candidates = scan_file("test.py", source)
         c = find(candidates, "MyTool", "definition")
         assert c is not None
@@ -394,7 +433,7 @@ class MyTool(StructuredTool):
 
     def test_multiple_agents_separate_registrations(self):
         """Each Agent(tools=[...]) call is a separate registration site."""
-        source = '''
+        source = """
 from crewai import Agent
 
 def t1(): pass
@@ -402,10 +441,9 @@ def t2(): pass
 
 a1 = Agent(role="a", tools=[t1])
 a2 = Agent(role="b", tools=[t1, t2])
-'''
+"""
         candidates = scan_file("test.py", source)
-        t1_regs = [c for c in candidates
-                   if c.symbol == "t1" and c.boundary == "registration"]
+        t1_regs = [c for c in candidates if c.symbol == "t1" and c.boundary == "registration"]
         # t1 registered in both Agent calls at different lines
         assert len(t1_regs) == 2
         assert t1_regs[0].line != t1_regs[1].line
@@ -414,6 +452,7 @@ a2 = Agent(role="b", tools=[t1, t2])
 # ═══════════════════════════════════════════════════════════════
 # E2E: scan → yaml → notary produces receipts
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestEndToEnd:
     """Verify that the scan output can actually drive the real AgentMint SDK.
@@ -425,8 +464,7 @@ class TestEndToEnd:
         from agentmint.notary import Notary
 
         candidates = scan_file("langgraph_agent.py", load("langgraph_agent.py"))
-        scopes = [c.scope_suggestion for c in candidates
-                  if c.symbol != "<dynamic>"]
+        scopes = [c.scope_suggestion for c in candidates if c.symbol != "<dynamic>"]
 
         notary = Notary()
         plan = notary.create_plan(
@@ -444,8 +482,9 @@ class TestEndToEnd:
         from agentmint.notary import Notary
 
         candidates = scan_file("openai_agent.py", load("openai_agent.py"))
-        definitions = [c for c in candidates
-                       if c.boundary == "definition" and c.confidence == "high"]
+        definitions = [
+            c for c in candidates if c.boundary == "definition" and c.confidence == "high"
+        ]
 
         notary = Notary()
         scopes = [c.scope_suggestion for c in definitions]
@@ -478,8 +517,7 @@ class TestEndToEnd:
         parsed = pyyaml.safe_load(yaml_str)
 
         # All non-dynamic symbols should be in the yaml
-        expected_symbols = {c.symbol for c in candidates
-                           if not c.symbol.startswith("<")}
+        expected_symbols = {c.symbol for c in candidates if not c.symbol.startswith("<")}
         yaml_symbols = set(parsed["tools"].keys())
         assert expected_symbols <= yaml_symbols
 
@@ -531,6 +569,7 @@ class TestQuickstart:
     def test_generates_runnable_quickstart(self):
         from agentmint.cli.patcher import generate_quickstart
         import ast
+
         candidates = scan_file("langgraph_agent.py", load("langgraph_agent.py"))
         script = generate_quickstart(candidates)
         assert script != ""
@@ -538,14 +577,15 @@ class TestQuickstart:
 
     def test_quickstart_references_real_tool(self):
         from agentmint.cli.patcher import generate_quickstart
+
         candidates = scan_file("langgraph_agent.py", load("langgraph_agent.py"))
         script = generate_quickstart(candidates)
         # Should reference an actual tool from the scan
-        assert any(c.symbol in script for c in candidates
-                   if not c.symbol.startswith("<"))
+        assert any(c.symbol in script for c in candidates if not c.symbol.startswith("<"))
 
     def test_quickstart_contains_notary(self):
         from agentmint.cli.patcher import generate_quickstart
+
         candidates = scan_file("langgraph_agent.py", load("langgraph_agent.py"))
         script = generate_quickstart(candidates)
         assert "Notary()" in script
@@ -554,6 +594,7 @@ class TestQuickstart:
 
     def test_shield_check_generated(self):
         from agentmint.cli.patcher import generate_shield_check
+
         candidates = scan_file("langgraph_agent.py", load("langgraph_agent.py"))
         snippet = generate_shield_check(candidates)
         assert "from agentmint.shield import scan" in snippet
@@ -561,5 +602,5 @@ class TestQuickstart:
 
     def test_empty_candidates_no_quickstart(self):
         from agentmint.cli.patcher import generate_quickstart
-        assert generate_quickstart([]) == ""
 
+        assert generate_quickstart([]) == ""

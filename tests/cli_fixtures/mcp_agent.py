@@ -1,4 +1,5 @@
 """MCP server with tool registrations — matches mcp_server/server.py patterns."""
+
 from mcp.server import Server
 from mcp.types import Tool
 

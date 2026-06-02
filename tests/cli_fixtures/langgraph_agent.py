@@ -1,4 +1,5 @@
 """LangGraph agent with @tool definitions and ToolNode registration."""
+
 from langgraph.prebuilt import tool, ToolNode
 from langgraph.graph import StateGraph
 

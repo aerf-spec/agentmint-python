@@ -61,15 +61,18 @@ MIN_TSR_BYTES: Final[int] = 64  # sanity check on TSA response
 
 # ── Errors ─────────────────────────────────────────────────
 
+
 class TimestampError(Exception):
     """Raised when any part of the timestamping process fails.
 
     The message always includes what went wrong and what to try next.
     """
+
     pass
 
 
 # ── Result ─────────────────────────────────────────────────
+
 
 @dataclass(frozen=True)
 class TimestampResult:
@@ -81,6 +84,7 @@ class TimestampResult:
         digest_hex: Hex-encoded SHA-512 digest of the original data.
         tsa_url: URL of the timestamp authority that issued the token.
     """
+
     tsq: bytes
     tsr: bytes
     digest_hex: str
@@ -105,6 +109,7 @@ class TimestampResult:
 
 
 # ── Public API ─────────────────────────────────────────────
+
 
 def timestamp(data: bytes, url: str | None = None) -> TimestampResult:
     """Timestamp arbitrary data via FreeTSA.
@@ -214,11 +219,17 @@ def verify(
     try:
         result = subprocess.run(
             [
-                "openssl", "ts", "-verify",
-                "-in", str(tsr_path),
-                "-queryfile", str(tsq_path),
-                "-CAfile", str(cacert_path),
-                "-untrusted", str(tsa_cert_path),
+                "openssl",
+                "ts",
+                "-verify",
+                "-in",
+                str(tsr_path),
+                "-queryfile",
+                str(tsq_path),
+                "-CAfile",
+                str(cacert_path),
+                "-untrusted",
+                str(tsa_cert_path),
             ],
             capture_output=True,
             text=True,
@@ -226,8 +237,7 @@ def verify(
         )
     except FileNotFoundError:
         raise TimestampError(
-            "openssl not found on PATH\n"
-            "  Install OpenSSL to verify timestamps independently."
+            "openssl not found on PATH\n  Install OpenSSL to verify timestamps independently."
         )
     except subprocess.TimeoutExpired:
         raise TimestampError("openssl verification timed out after 10 seconds")
@@ -238,6 +248,7 @@ def verify(
 
 
 # ── Input validation ───────────────────────────────────────
+
 
 def _validate_data(data: bytes) -> None:
     """Validate input data before timestamping."""
@@ -256,6 +267,7 @@ def _validate_data(data: bytes) -> None:
 
 
 # ── HTTP helpers ───────────────────────────────────────────
+
 
 def _submit_tsq_with_retry(tsq: bytes, tsa_url: str = FREETSA_TSR_URL) -> bytes:
     """Submit a timestamp query to FreeTSA with retry on transient failures."""
@@ -293,8 +305,7 @@ def _submit_tsq(tsq: bytes, tsa_url: str = FREETSA_TSR_URL) -> bytes:
 
     if resp.status_code == 403:
         raise TimestampError(
-            "FreeTSA returned 403 Forbidden\n"
-            "  This usually means the timestamp query is malformed."
+            "FreeTSA returned 403 Forbidden\n  This usually means the timestamp query is malformed."
         )
 
     resp.raise_for_status()

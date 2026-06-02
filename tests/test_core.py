@@ -80,10 +80,7 @@ class TestExpiry:
 class TestDelegation:
     def test_delegation_ok(self):
         mint = AgentMint(quiet=True)
-        plan = mint.issue_plan(
-            "deploy:api", "alice",
-            scope=["build:*"], delegates_to=["builder"]
-        )
+        plan = mint.issue_plan("deploy:api", "alice", scope=["build:*"], delegates_to=["builder"])
         result = mint.delegate(plan, "builder", "build:docker")
         assert result.ok is True
         assert result.receipt is not None
@@ -91,10 +88,7 @@ class TestDelegation:
 
     def test_unauthorized_agent_denied(self):
         mint = AgentMint(quiet=True)
-        plan = mint.issue_plan(
-            "deploy:api", "alice",
-            scope=["build:*"], delegates_to=["builder"]
-        )
+        plan = mint.issue_plan("deploy:api", "alice", scope=["build:*"], delegates_to=["builder"])
         result = mint.delegate(plan, "rogue", "build:docker")
         assert result.status == DelegationStatus.DENIED_AGENT
         assert result.denied is True
@@ -102,19 +96,18 @@ class TestDelegation:
 
     def test_out_of_scope_denied(self):
         mint = AgentMint(quiet=True)
-        plan = mint.issue_plan(
-            "deploy:api", "alice",
-            scope=["build:*"], delegates_to=["builder"]
-        )
+        plan = mint.issue_plan("deploy:api", "alice", scope=["build:*"], delegates_to=["builder"])
         result = mint.delegate(plan, "builder", "deploy:prod")
         assert result.status == DelegationStatus.DENIED_SCOPE
 
     def test_checkpoint_required(self):
         mint = AgentMint(quiet=True)
         plan = mint.issue_plan(
-            "deploy:api", "alice",
-            scope=["*"], delegates_to=["builder"],
-            requires_checkpoint=["deploy:*"]
+            "deploy:api",
+            "alice",
+            scope=["*"],
+            delegates_to=["builder"],
+            requires_checkpoint=["deploy:*"],
         )
         result = mint.delegate(plan, "builder", "deploy:prod")
         assert result.status == DelegationStatus.CHECKPOINT
@@ -123,9 +116,7 @@ class TestDelegation:
     def test_max_depth_exceeded(self):
         mint = AgentMint(quiet=True)
         plan = mint.issue_plan(
-            "deploy:api", "alice",
-            scope=["*"], delegates_to=["a", "b"],
-            max_depth=1
+            "deploy:api", "alice", scope=["*"], delegates_to=["a", "b"], max_depth=1
         )
         r1 = mint.delegate(plan, "a", "build:one")
         assert r1.ok
@@ -178,12 +169,11 @@ class TestAudit:
     def test_audit_chain(self):
         mint = AgentMint(quiet=True)
         plan = mint.issue_plan(
-            "deploy:api", "alice",
-            scope=["*"], delegates_to=["a", "b"], max_depth=3
+            "deploy:api", "alice", scope=["*"], delegates_to=["a", "b"], max_depth=3
         )
         r1 = mint.delegate(plan, "a", "step:one").receipt
         r2 = mint.delegate(r1, "b", "step:two").receipt
-        
+
         chain = mint.audit(r2)
         assert len(chain) == 3
         assert chain[0].sub == "alice"

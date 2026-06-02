@@ -53,7 +53,7 @@ def main():
         tag = "in policy" if receipt.get("in_policy") else "VIOLATION"
         chain_mark = "✓" if chain_match else "✗ BREAK"
 
-        print(f"  [{i+1}] {rid}  {action}  ({tag})  chain:{chain_mark}")
+        print(f"  [{i + 1}] {rid}  {action}  ({tag})  chain:{chain_mark}")
 
     print(f"\n{'─' * 50}")
     print(f"  Receipts: {len(receipts)}")

@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 
 class DelegationStatus(Enum):
     """Status of a delegation request."""
+
     OK = "ok"
     DENIED_AGENT = "denied:agent_not_authorized"
     DENIED_DEPTH = "denied:max_depth_exceeded"
@@ -25,6 +26,7 @@ class DelegationStatus(Enum):
 @dataclass(frozen=True)
 class DelegationResult:
     """Result of a delegation request."""
+
     status: DelegationStatus
     receipt: Optional[Receipt]
     chain: tuple[str, ...]
@@ -50,6 +52,7 @@ class EnforceMode(Enum):
     WARN:    Full evaluation, never blocks. Emits warnings to sinks.
     ENFORCE: Full enforcement. Default. Current behavior unchanged.
     """
+
     SHADOW = "shadow"
     WARN = "warn"
     ENFORCE = "enforce"

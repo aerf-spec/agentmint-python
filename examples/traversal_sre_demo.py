@@ -49,55 +49,73 @@ T = TypeVar("T")
 
 # ── Display helpers ────────────────────────────────────────
 
+
 def pause(seconds: float = 0.3) -> None:
     time.sleep(seconds)
+
 
 def heading(text: str) -> None:
     console.print(f"\n[bold white]{text}[/]\n")
     pause(0.15)
 
+
 def ok(msg: str) -> None:
     console.print(f"  [bold green]✓[/] {msg}")
+
 
 def fail(msg: str) -> None:
     console.print(f"  [bold red]✗[/] {msg}")
 
+
 def warn(msg: str) -> None:
     console.print(f"  [bold yellow]![/] {msg}")
 
+
 def info(msg: str) -> None:
     console.print(f"  [dim]{msg}[/]")
+
 
 def numbered(n: int, msg: str) -> None:
     console.print(f"  [bold cyan]{n}.[/] [white]{msg}[/]")
     pause(0.35)
 
+
 def source(name: str, detail: str) -> None:
     console.print(f"     [cyan]→[/] [bold]{name}[/]  [dim]{detail}[/]")
     pause(0.2)
+
 
 def section_break() -> None:
     console.print()
     console.rule(style="dim white")
     console.print()
 
+
 def banner(num: int, title: str, description: str, color: str) -> None:
-    console.print(Panel(
-        Text.from_markup(f"[bold white]Scenario {num} — {title}[/]\n\n[dim]{description}[/]"),
-        border_style=color, padding=(1, 2),
-    ))
+    console.print(
+        Panel(
+            Text.from_markup(f"[bold white]Scenario {num} — {title}[/]\n\n[dim]{description}[/]"),
+            border_style=color,
+            padding=(1, 2),
+        )
+    )
     pause(0.6)
 
+
 def takeaway(title: str, body: str, color: str) -> None:
-    console.print(Panel(
-        Text.from_markup(body),
-        title=f"[bold white]{title}[/]",
-        border_style=f"dim {color}", padding=(1, 2),
-    ))
+    console.print(
+        Panel(
+            Text.from_markup(body),
+            title=f"[bold white]{title}[/]",
+            border_style=f"dim {color}",
+            padding=(1, 2),
+        )
+    )
     pause(0.4)
 
 
 # ── Latency ───────────────────────────────────────────────
+
 
 @dataclass
 class Latency:
@@ -145,8 +163,10 @@ ELASTIC = {
 GITHUB = {
     "repo": "acme-corp/payments-api",
     "deploy": {
-        "version": "v2.3.1", "deployed_at": "2026-03-18T14:15:00Z",
-        "author": "dev@acme-corp.com", "sha": "a1b2c3d4",
+        "version": "v2.3.1",
+        "deployed_at": "2026-03-18T14:15:00Z",
+        "author": "dev@acme-corp.com",
+        "sha": "a1b2c3d4",
         "message": "feat: add retry logic to payment validation",
     },
 }
@@ -161,6 +181,7 @@ INCIDENT = {
 
 # ── Shared logic ──────────────────────────────────────────
 
+
 def _hash(data: str) -> str:
     return hashlib.sha256(data.encode()).hexdigest()[:12]
 
@@ -174,8 +195,14 @@ def show_investigation() -> float:
 
     heading("② Multi-Source Investigation")
     numbered(2, "Query Grafana for golden signals")
-    source("Grafana", f"error_rate: {GRAFANA['error_rate_5xx']:.0%} (baseline: {GRAFANA['error_rate_5xx_baseline']:.0%})")
-    source("Grafana", f"p99 latency: {GRAFANA['p99_latency_ms']}ms (baseline: {GRAFANA['p99_latency_baseline_ms']}ms)")
+    source(
+        "Grafana",
+        f"error_rate: {GRAFANA['error_rate_5xx']:.0%} (baseline: {GRAFANA['error_rate_5xx_baseline']:.0%})",
+    )
+    source(
+        "Grafana",
+        f"p99 latency: {GRAFANA['p99_latency_ms']}ms (baseline: {GRAFANA['p99_latency_baseline_ms']}ms)",
+    )
 
     numbered(3, "Query Elastic for error logs")
     source("Elastic", f"{ELASTIC['total_hits']} errors in last 15m")
@@ -186,25 +213,36 @@ def show_investigation() -> float:
     source("GitHub", f"{d['version']} deployed by {d['author']}")
 
     heading("③ Root Cause")
-    console.print(Panel(
-        Text.from_markup(
-            "[bold white]Root Cause:[/] deployment v2.3.1 introduced regression\n"
-            "[bold white]Confidence:[/] [green]0.94[/]\n"
-            "[bold white]Chain:[/] retry logic → pool exhaustion → auth timeouts → payment failures"
-        ),
-        title="[bold cyan]Diagnosis[/]", border_style="cyan", padding=(0, 2),
-    ))
+    console.print(
+        Panel(
+            Text.from_markup(
+                "[bold white]Root Cause:[/] deployment v2.3.1 introduced regression\n"
+                "[bold white]Confidence:[/] [green]0.94[/]\n"
+                "[bold white]Chain:[/] retry logic → pool exhaustion → auth timeouts → payment failures"
+            ),
+            title="[bold cyan]Diagnosis[/]",
+            border_style="cyan",
+            padding=(0, 2),
+        )
+    )
     return t0
 
 
 def make_plans(mint, notary, user, scope, checks, agent="sre-agent"):
     gk = mint.issue_plan(
-        action="remediation", user=user, scope=scope,
-        delegates_to=[agent], requires_checkpoint=checks, ttl=300,
+        action="remediation",
+        user=user,
+        scope=scope,
+        delegates_to=[agent],
+        requires_checkpoint=checks,
+        ttl=300,
     )
     ny = notary.create_plan(
-        user=user, action="remediation", scope=scope,
-        checkpoints=checks, delegates_to=[agent],
+        user=user,
+        action="remediation",
+        scope=scope,
+        checkpoints=checks,
+        delegates_to=[agent],
     )
     return gk, ny
 
@@ -215,19 +253,31 @@ def gate_check(mint, plan, agent, action):
 
 def sign_and_stamp(notary, action, agent, plan, evidence):
     lat = Latency()
-    _, lat.sign_ms = timed_ms(lambda: notary.notarise(
-        action=action, agent=agent, plan=plan,
-        evidence=evidence, enable_timestamp=False,
-    ))
+    _, lat.sign_ms = timed_ms(
+        lambda: notary.notarise(
+            action=action,
+            agent=agent,
+            plan=plan,
+            evidence=evidence,
+            enable_timestamp=False,
+        )
+    )
     fresh = notary.create_plan(
-        user=plan.user, action=plan.action,
-        scope=list(plan.scope), checkpoints=list(plan.checkpoints),
+        user=plan.user,
+        action=plan.action,
+        scope=list(plan.scope),
+        checkpoints=list(plan.checkpoints),
         delegates_to=list(plan.delegates_to),
     )
-    receipt, total = timed_ms(lambda: notary.notarise(
-        action=action, agent=agent, plan=fresh,
-        evidence=evidence, enable_timestamp=True,
-    ))
+    receipt, total = timed_ms(
+        lambda: notary.notarise(
+            action=action,
+            agent=agent,
+            plan=fresh,
+            evidence=evidence,
+            enable_timestamp=True,
+        )
+    )
     lat.timestamp_ms = total - lat.sign_ms
     return receipt, lat
 
@@ -268,9 +318,14 @@ def verify(notary, receipt, note=""):
 
 # ── Scenario 1: Happy Path ────────────────────────────────
 
+
 def scenario_1(mint, notary):
-    banner(1, "Happy Path (L4: Human-Approved)",
-        "Agent investigates → human approves → agent rolls back → receipt proves it.", "green")
+    banner(
+        1,
+        "Happy Path (L4: Human-Approved)",
+        "Agent investigates → human approves → agent rolls back → receipt proves it.",
+        "green",
+    )
 
     t0 = show_investigation()
 
@@ -287,11 +342,15 @@ def scenario_1(mint, notary):
         "severity": INCIDENT["severity"],
         "root_cause": "deployment_v2.3.1_regression",
         "confidence": 0.94,
-        "rollback_from": "v2.3.1", "rollback_to": "v2.3.0",
-        "execution_result": True, "pods_restarted": 6,
+        "rollback_from": "v2.3.1",
+        "rollback_to": "v2.3.0",
+        "execution_result": True,
+        "pods_restarted": 6,
         "approved_by": INCIDENT["on_call"],
     }
-    receipt, lat = sign_and_stamp(notary, "remediate:rollback:payments-api", "sre-agent", ny, evidence)
+    receipt, lat = sign_and_stamp(
+        notary, "remediate:rollback:payments-api", "sre-agent", ny, evidence
+    )
     render_receipt(receipt)
     verify(notary, receipt)
     return receipt
@@ -299,9 +358,9 @@ def scenario_1(mint, notary):
 
 # ── Scenario 2: Scope Violation ───────────────────────────
 
+
 def scenario_2(mint, notary):
-    banner(2, "Scope Violation",
-        "Agent targets wrong service. Not in scope. Blocked.", "red")
+    banner(2, "Scope Violation", "Agent targets wrong service. Not in scope. Blocked.", "red")
 
     scope = ["remediate:rollback:payments-api"]
     checks = ["remediate:delete:*"]
@@ -310,10 +369,16 @@ def scenario_2(mint, notary):
     result, gk_us = gate_check(mint, gk, "sre-agent", "remediate:restart:auth-service")
     fail(f"BLOCKED — {result.status.value} — {gk_us:.0f}μs")
 
-    receipt, _ = sign_and_stamp(notary, "remediate:restart:auth-service", "sre-agent", ny, {
-        "attempted": "remediate:restart:auth-service",
-        "result": result.status.value,
-    })
+    receipt, _ = sign_and_stamp(
+        notary,
+        "remediate:restart:auth-service",
+        "sre-agent",
+        ny,
+        {
+            "attempted": "remediate:restart:auth-service",
+            "result": result.status.value,
+        },
+    )
     render_receipt(receipt)
     verify(notary, receipt, "denials are signed too")
     return receipt
@@ -321,9 +386,14 @@ def scenario_2(mint, notary):
 
 # ── Scenario 3: L5 Autonomous ─────────────────────────────
 
+
 def scenario_3(mint, notary):
-    banner(3, "Autonomous (L5: No Human)",
-        "Policy engine approves. No Slack button. Receipt is the accountability.", "yellow")
+    banner(
+        3,
+        "Autonomous (L5: No Human)",
+        "Policy engine approves. No Slack button. Receipt is the accountability.",
+        "yellow",
+    )
 
     scope = ["remediate:rollback:payments-api"]
     checks = ["remediate:delete:*"]
@@ -332,11 +402,19 @@ def scenario_3(mint, notary):
     result, gk_us = gate_check(mint, gk, "sre-agent", "remediate:rollback:payments-api")
     ok(f"AUTHORIZED by policy engine — {gk_us:.0f}μs")
 
-    receipt, _ = sign_and_stamp(notary, "remediate:rollback:payments-api", "sre-agent", ny, {
-        "rollback_from": "v2.3.1", "rollback_to": "v2.3.0",
-        "approved_by": "policy-engine@acme-corp.com",
-        "human_in_loop": False, "autonomy_level": "L5",
-    })
+    receipt, _ = sign_and_stamp(
+        notary,
+        "remediate:rollback:payments-api",
+        "sre-agent",
+        ny,
+        {
+            "rollback_from": "v2.3.1",
+            "rollback_to": "v2.3.0",
+            "approved_by": "policy-engine@acme-corp.com",
+            "human_in_loop": False,
+            "autonomy_level": "L5",
+        },
+    )
     render_receipt(receipt)
     verify(notary, receipt)
     return receipt
@@ -344,9 +422,14 @@ def scenario_3(mint, notary):
 
 # ── Scenario 4: Checkpoint ────────────────────────────────
 
+
 def scenario_4(mint, notary):
-    banner(4, "Checkpoint Escalation",
-        "Agent wants to scale down — high risk. Escalated, not denied.", "magenta")
+    banner(
+        4,
+        "Checkpoint Escalation",
+        "Agent wants to scale down — high risk. Escalated, not denied.",
+        "magenta",
+    )
 
     scope = ["remediate:rollback:*", "remediate:scale_down:*"]
     checks = ["remediate:scale_down:*"]
@@ -355,17 +438,24 @@ def scenario_4(mint, notary):
     result, gk_us = gate_check(mint, gk, "sre-agent", "remediate:scale_down:payments-api")
     warn(f"CHECKPOINT — needs re-approval — {gk_us:.0f}μs")
 
-    receipt, _ = sign_and_stamp(notary, "remediate:scale_down:payments-api", "sre-agent", ny, {
-        "attempted": "remediate:scale_down:payments-api",
-        "result": "checkpoint_required",
-        "blast_radius": "high",
-    })
+    receipt, _ = sign_and_stamp(
+        notary,
+        "remediate:scale_down:payments-api",
+        "sre-agent",
+        ny,
+        {
+            "attempted": "remediate:scale_down:payments-api",
+            "result": "checkpoint_required",
+            "blast_radius": "high",
+        },
+    )
     render_receipt(receipt)
     verify(notary, receipt, "escalations are signed too")
     return receipt
 
 
 # ── Evidence Export + Verification ─────────────────────────
+
 
 def export_and_verify(notary):
     """Export evidence package and verify both timestamps and signatures."""
@@ -422,29 +512,36 @@ def export_and_verify(notary):
     if sig_fail == 0:
         ok("[bold green]All signatures verified[/]")
 
-    console.print(Panel(
-        Text.from_markup(
-            "[bold white]What's in the zip:[/]\n\n"
-            "  [cyan]VERIFY.sh[/]        — bash VERIFY.sh — timestamps, pure OpenSSL\n"
-            "  [cyan]verify_sigs.py[/]   — python3 verify_sigs.py — Ed25519 signatures\n"
-            "  [cyan]public_key.pem[/]   — verify without trusting AgentMint\n\n"
-            "[dim]Give this zip to an auditor. They verify on their own machine.\n"
-            "No AgentMint software. No account. No network connection.[/]"
-        ),
-        border_style="dim green", padding=(1, 2),
-    ))
+    console.print(
+        Panel(
+            Text.from_markup(
+                "[bold white]What's in the zip:[/]\n\n"
+                "  [cyan]VERIFY.sh[/]        — bash VERIFY.sh — timestamps, pure OpenSSL\n"
+                "  [cyan]verify_sigs.py[/]   — python3 verify_sigs.py — Ed25519 signatures\n"
+                "  [cyan]public_key.pem[/]   — verify without trusting AgentMint\n\n"
+                "[dim]Give this zip to an auditor. They verify on their own machine.\n"
+                "No AgentMint software. No account. No network connection.[/]"
+            ),
+            border_style="dim green",
+            padding=(1, 2),
+        )
+    )
 
 
 # ── Main ──────────────────────────────────────────────────
 
+
 def main() -> None:
-    console.print(Panel(
-        Text.from_markup(
-            "[bold white]AgentMint × SRE Agent[/]\n"
-            "[dim]Cryptographic receipts at the remediation boundary[/]"
-        ),
-        border_style="white", padding=(0, 2),
-    ))
+    console.print(
+        Panel(
+            Text.from_markup(
+                "[bold white]AgentMint × SRE Agent[/]\n"
+                "[dim]Cryptographic receipts at the remediation boundary[/]"
+            ),
+            border_style="white",
+            padding=(0, 2),
+        )
+    )
 
     mint = AgentMint(quiet=True)
     notary = Notary()

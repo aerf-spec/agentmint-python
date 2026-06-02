@@ -1,4 +1,5 @@
 """OpenAI Agents SDK — matches examples/openai_agents_receipts_demo."""
+
 from agents import Agent, Runner, RunHooks, function_tool
 
 
