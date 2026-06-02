@@ -1,43 +1,79 @@
-"""Timestamp provider stubs for the build spec provider layer.
-
-PR 2 will port the concrete RFC 3161 behavior from :mod:`agentmint.timestamp`
-into this protocol-shaped provider module.
-"""
+"""Timestamp providers."""
 
 from __future__ import annotations
 
+import logging
+from dataclasses import dataclass
+from datetime import datetime, timezone
+
 from agentmint.protocols import Timestamper
+from agentmint.timestamp import TimestampError, verify as verify_token
+from agentmint.timestamp import timestamp as issue_timestamp
 
 
-class NoTimestamper:
-    """Placeholder timestamper that will represent disabled timestamping."""
-
-    def timestamp(self, digest: bytes) -> bytes:
-        """Return empty timestamp evidence for a digest."""
-
-        raise NotImplementedError("NoTimestamper will be implemented in PR 2")
-
-    def verify(self, digest: bytes, token: bytes) -> bool:
-        """Verify empty timestamp evidence."""
-
-        raise NotImplementedError("NoTimestamper will be implemented in PR 2")
+LOGGER = logging.getLogger(__name__)
 
 
-class RFC3161Timestamper:
-    """Placeholder RFC 3161 timestamper implementation."""
+@dataclass(frozen=True)
+class TimestampRecord:
+    """Timestamp payload stored on a receipt."""
 
-    def __init__(self, url: str) -> None:
+    observed_at: str
+    source: str
+    proof: bytes = b""
+    tsq: bytes = b""
+    tsr: bytes = b""
+    digest_hex: str = ""
+    tsa_url: str = ""
+
+    def to_dict(self) -> dict[str, str]:
+        data = {
+            "observed_at": self.observed_at,
+            "source": self.source,
+        }
+        if self.digest_hex:
+            data["digest_hex"] = self.digest_hex
+        if self.tsa_url:
+            data["tsa_url"] = self.tsa_url
+        return data
+
+
+class NoTimestamper(Timestamper):
+    """Self-reported UTC timestamps with no network dependency."""
+
+    def timestamp(self, payload: bytes) -> TimestampRecord:
+        del payload
+        observed_at = datetime.now(timezone.utc).isoformat()
+        return TimestampRecord(observed_at=observed_at, source="self")
+
+
+class RFC3161Timestamper(Timestamper):
+    """RFC 3161 timestamper with graceful self-reported fallback."""
+
+    def __init__(self, url: str, timeout_seconds: int = 5) -> None:
         self.url = url
+        self.timeout_seconds = timeout_seconds
+        self._fallback = NoTimestamper()
 
-    def timestamp(self, digest: bytes) -> bytes:
-        """Return RFC 3161 timestamp evidence for a digest."""
+    def timestamp(self, payload: bytes) -> TimestampRecord:
+        del self.timeout_seconds
+        try:
+            result = issue_timestamp(payload, url=self.url)
+            return TimestampRecord(
+                observed_at=datetime.now(timezone.utc).isoformat(),
+                source=self.url,
+                proof=result.tsr,
+                tsq=result.tsq,
+                tsr=result.tsr,
+                digest_hex=result.digest_hex,
+                tsa_url=result.tsa_url,
+            )
+        except TimestampError as exc:
+            LOGGER.warning("TSA unreachable, falling back to self timestamp: %s", exc)
+            return self._fallback.timestamp(payload)
 
-        raise NotImplementedError("RFC3161Timestamper will be implemented in PR 2")
-
-    def verify(self, digest: bytes, token: bytes) -> bool:
-        """Verify RFC 3161 timestamp evidence."""
-
-        raise NotImplementedError("RFC3161Timestamper will be implemented in PR 2")
+    def verify(self, tsq_path, tsr_path, cacert_path, tsa_cert_path):  # pragma: no cover
+        return verify_token(tsq_path, tsr_path, cacert_path, tsa_cert_path)
 
 
-__all__ = ["NoTimestamper", "RFC3161Timestamper", "Timestamper"]
+__all__ = ["NoTimestamper", "RFC3161Timestamper", "TimestampRecord", "Timestamper"]

@@ -1,4 +1,4 @@
-"""Decorator for protecting functions with receipts."""
+"""Decorator helpers for AgentMint authorization and notarisation."""
 
 from __future__ import annotations
 from contextvars import ContextVar
@@ -79,6 +79,47 @@ def require_receipt(mint: AgentMint, action: str) -> Callable[[Callable[P, T]], 
             console.authorized(action, receipt.sub, receipt.id)
             return func(*args, **kwargs)
 
+        return wrapper
+
+    return decorator
+
+
+def notarise(
+    notary,
+    action: Optional[str] = None,
+    plan=None,
+    agent: Optional[str] = None,
+    evidence=None,
+    enable_timestamp: bool = True,
+) -> Callable[[Callable[P, T]], Callable[P, T]]:
+    """Decorator that records a receipt after a successful function call."""
+
+    def decorator(func: Callable[P, T]) -> Callable[P, T]:
+        @wraps(func)
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+            result = func(*args, **kwargs)
+            if callable(evidence):
+                receipt_evidence = evidence(*args, **kwargs, result=result)
+            elif evidence is None:
+                receipt_evidence = {
+                    "function": func.__name__,
+                    "args": list(args),
+                    "kwargs": kwargs,
+                }
+            else:
+                receipt_evidence = dict(evidence)
+
+            receipt_action = action or func.__name__
+            wrapper.last_receipt = notary.notarise(
+                action=receipt_action,
+                agent=agent,
+                plan=plan,
+                evidence=receipt_evidence,
+                enable_timestamp=enable_timestamp,
+            )
+            return result
+
+        wrapper.last_receipt = None  # type: ignore[attr-defined]
         return wrapper
 
     return decorator

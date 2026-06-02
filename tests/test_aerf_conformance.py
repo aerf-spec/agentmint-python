@@ -23,7 +23,6 @@ def _format_validation_errors(errors: list[object]) -> str:
     return "\n".join(lines)
 
 
-@pytest.mark.xfail(strict=True, reason="Current Notary receipts intentionally drift from AERF v0.1")
 def test_notary_receipt_matches_aerf_v01_schema() -> None:
     """Produce a receipt through Notary.notarise and validate it against AERF v0.1."""
 
@@ -33,12 +32,12 @@ def test_notary_receipt_matches_aerf_v01_schema() -> None:
     notary = Notary()
     plan = notary.create_plan(
         user="auditor@example.com",
-        action="files/read",
-        scope=["files/*"],
+        action="files:read",
+        scope=["files:*"],
         ttl_seconds=60,
     )
     receipt = notary.notarise(
-        action="files/read",
+        action="files:read",
         agent="conformance-agent",
         plan=plan,
         evidence={"path": "/tmp/demo.txt", "operation": "read"},

@@ -30,6 +30,7 @@ from .errors import (
 from .types import DelegationStatus, DelegationResult, EnforceMode
 from .decorator import (
     AuthorizationError,
+    notarise,
     require_receipt,
     set_receipt,
     get_receipt,
@@ -58,6 +59,7 @@ __all__ = [
     "ReplayError",
     "DeniedError",
     "AuthorizationError",
+    "notarise",
     # Decorator
     "require_receipt",
     "set_receipt",
