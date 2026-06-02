@@ -52,6 +52,16 @@ def clear_receipt() -> None:
     _current_receipt.set(None)
 
 
+def _default_plan_for_notary(notary: Notary) -> Any:
+    """Create a conservative local default plan for zero-config flows."""
+    return notary.create_plan(
+        user="local",
+        action="default",
+        scope=["*"],
+        ttl_seconds=3600,
+    )
+
+
 def notarise(
     notary: Notary,
     action: Optional[str] = None,
@@ -100,12 +110,7 @@ def notarise(
                 plan_store = FilePlanStore(config.keystore_path.parent)
                 active_plan = plan_store.active()
                 if active_plan is None:
-                    active_plan = effective_notary.create_plan(
-                        user="local",
-                        action="default",
-                        scope=["*"],
-                        ttl_seconds=3600,
-                    )
+                    active_plan = _default_plan_for_notary(effective_notary)
                     plan_store.save(active_plan, "default", activate=True)
                 receipt = effective_notary.notarise(
                     action=effective_action,
@@ -116,10 +121,11 @@ def notarise(
                 )
                 FileReceiptSink(config.sink_path).write_receipt(receipt.id, receipt.to_json())
             else:
+                effective_plan = plan if plan is not None else _default_plan_for_notary(notary)
                 receipt = notary.notarise(
                     action=effective_action,
                     agent=agent or func.__name__,
-                    plan=plan,
+                    plan=effective_plan,
                     evidence=receipt_evidence,
                     enable_timestamp=enable_timestamp,
                 )
