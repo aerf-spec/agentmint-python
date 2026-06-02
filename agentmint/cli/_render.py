@@ -26,7 +26,9 @@ def _format_time(value: str) -> str:
     return f"{utc_text} {dim(f'({local_text})')}"
 
 
-def render_receipt(receipt: NotarisedReceipt, verify_sig: bool = True, profile: Optional[Any] = None) -> str:
+def render_receipt(
+    receipt: NotarisedReceipt, verify_sig: bool = True, profile: Optional[Any] = None
+) -> str:
     evidence: Dict[str, Any] = dict(receipt.evidence)
     if profile is not None and hasattr(profile, "render_evidence"):
         evidence = profile.render_evidence(evidence)

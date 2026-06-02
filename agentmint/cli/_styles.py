@@ -19,28 +19,34 @@ try:
 except ImportError:
     _HAS_RICH = False
 
-THEME = RichTheme(
-    {
-        "primary": "#E2E8F0",
-        "secondary": "#94A3B8",
-        "dim": "#64748B",
-        "blue": "#3B82F6",
-        "green": "#10B981",
-        "red": "#EF4444",
-        "yellow": "#FBBF24",
-        "border": "#1E293B",
-        "surface": "#151D2E",
-        "brand.agent": "#3B82F6",
-        "brand.mint": "#E2E8F0",
-        "success": "#10B981",
-        "error": "#EF4444",
-        "warning": "#FBBF24",
-        "info": "#94A3B8",
-    }
-) if _HAS_RICH else None
+THEME = (
+    RichTheme(
+        {
+            "primary": "#E2E8F0",
+            "secondary": "#94A3B8",
+            "dim": "#64748B",
+            "blue": "#3B82F6",
+            "green": "#10B981",
+            "red": "#EF4444",
+            "yellow": "#FBBF24",
+            "border": "#1E293B",
+            "surface": "#151D2E",
+            "brand.agent": "#3B82F6",
+            "brand.mint": "#E2E8F0",
+            "success": "#10B981",
+            "error": "#EF4444",
+            "warning": "#FBBF24",
+            "info": "#94A3B8",
+        }
+    )
+    if _HAS_RICH
+    else None
+)
 
 _NO_COLOR = False
-_CONSOLE: Optional[Any] = RichConsole(theme=THEME) if _HAS_RICH and RichConsole is not None else None
+_CONSOLE: Optional[Any] = (
+    RichConsole(theme=THEME) if _HAS_RICH and RichConsole is not None else None
+)
 _FIRST_HEADING = True
 
 BLUE = "\033[38;2;59;130;246m"
@@ -58,7 +64,12 @@ def set_no_color(value: bool) -> None:
     global _NO_COLOR, _CONSOLE
     _NO_COLOR = value or bool(os.environ.get("NO_COLOR")) or not sys.stdout.isatty()
     if _NO_COLOR:
-        globals().update({key: "" for key in ["BLUE", "GREEN", "RED", "YELLOW", "FG", "SEC", "DIM", "BOLD", "RESET"]})
+        globals().update(
+            {
+                key: ""
+                for key in ["BLUE", "GREEN", "RED", "YELLOW", "FG", "SEC", "DIM", "BOLD", "RESET"]
+            }
+        )
     if _HAS_RICH and RichConsole is not None:
         _CONSOLE = RichConsole(theme=THEME, no_color=_NO_COLOR)
 

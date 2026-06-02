@@ -23,7 +23,9 @@ def _write_agent(tmp_path):
 
 
 def test_init_creates_workspace(tmp_path):
-    result = subprocess.run(["agentmint", "init", "--yes"], cwd=tmp_path, capture_output=True, text=True)
+    result = subprocess.run(
+        ["agentmint", "init", "--yes"], cwd=tmp_path, capture_output=True, text=True
+    )
     assert result.returncode == 0
     assert (tmp_path / ".agentmint" / "config.toml").exists()
     assert (tmp_path / ".agentmint" / "keys").is_dir()
@@ -37,7 +39,9 @@ def test_three_minute_flow(tmp_path):
     assert result.returncode == 0
     receipts = list((tmp_path / "receipts").rglob("*.json"))
     assert len(receipts) == 1
-    verify_result = subprocess.run(["agentmint", "verify", str(receipts[0])], cwd=tmp_path, capture_output=True, text=True)
+    verify_result = subprocess.run(
+        ["agentmint", "verify", str(receipts[0])], cwd=tmp_path, capture_output=True, text=True
+    )
     assert verify_result.returncode == 0
     assert "valid" in verify_result.stdout.lower()
 
@@ -62,7 +66,9 @@ def test_init_detects_healthcare(tmp_path):
         "    # HIPAA-compliant submission to payer\n"
         "    pass\n"
     )
-    result = subprocess.run(["agentmint", "init"], cwd=tmp_path, input="n\n", capture_output=True, text=True)
+    result = subprocess.run(
+        ["agentmint", "init"], cwd=tmp_path, input="n\n", capture_output=True, text=True
+    )
     assert "healthcare" in result.stdout.lower()
 
 
@@ -71,7 +77,9 @@ def test_show_renders_receipt(tmp_path):
     _write_agent(tmp_path)
     subprocess.run(["python3", "agent.py"], cwd=tmp_path, check=True)
     receipt_path = next((tmp_path / "receipts").rglob("*.json"))
-    result = subprocess.run(["agentmint", "show", str(receipt_path)], cwd=tmp_path, capture_output=True, text=True)
+    result = subprocess.run(
+        ["agentmint", "show", str(receipt_path)], cwd=tmp_path, capture_output=True, text=True
+    )
     assert result.returncode == 0
     assert "Receipt" in result.stdout
     assert "Signature" in result.stdout
@@ -79,7 +87,9 @@ def test_show_renders_receipt(tmp_path):
 
 def test_no_color_flag_strips_ansi(tmp_path):
     subprocess.run(["agentmint", "init", "--yes"], cwd=tmp_path, check=True)
-    result = subprocess.run(["agentmint", "--no-color", "doctor"], cwd=tmp_path, capture_output=True, text=True)
+    result = subprocess.run(
+        ["agentmint", "--no-color", "doctor"], cwd=tmp_path, capture_output=True, text=True
+    )
     assert "\033[" not in result.stdout
 
 

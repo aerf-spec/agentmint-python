@@ -24,11 +24,17 @@ def chain_cmd(
     receipts = [read_receipt(path) for path in sorted(cfg.sink_path.glob("*.json"))]
     if subcommand == "walk":
         for receipt in receipts:
-            console_print(f"{accent(receipt.action)} {dim(receipt.id[:8])} {dim(receipt.observed_at)}")
+            console_print(
+                f"{accent(receipt.action)} {dim(receipt.id[:8])} {dim(receipt.observed_at)}"
+            )
         return
     if subcommand == "verify":
         result = verify_chain(receipts)
-        console_print(success("Chain valid", result.root_hash[:8]) if result.valid else error("Chain invalid", result.reason))
+        console_print(
+            success("Chain valid", result.root_hash[:8])
+            if result.valid
+            else error("Chain invalid", result.reason)
+        )
         if not result.valid:
             raise typer.Exit(code=1)
         return

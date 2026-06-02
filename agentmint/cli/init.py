@@ -77,13 +77,17 @@ def apply_setup(path: Path, suggestion: Suggestion) -> Config:
     project_root.joinpath("receipts").mkdir(parents=True, exist_ok=True)
 
     if suggestion.profile_package and importlib.util.find_spec(suggestion.profile_package) is None:
-        console_print(info(f"Install optional profile package: pip install {suggestion.profile_package}"))
+        console_print(
+            info(f"Install optional profile package: pip install {suggestion.profile_package}")
+        )
 
     key_provider = FileKeyProvider(config.keystore_path)
     key_provider.bootstrap()
 
     notary = Notary(key=config.keystore_path)
-    plan = notary.create_plan(user="local", action="default", scope=suggestion.plan_scope, ttl_seconds=None)
+    plan = notary.create_plan(
+        user="local", action="default", scope=suggestion.plan_scope, ttl_seconds=None
+    )
     plan_store = FilePlanStore(config.keystore_path.parent)
     plan_store.save(plan, "default", activate=True)
     config.plan_id = plan.id

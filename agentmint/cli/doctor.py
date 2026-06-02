@@ -52,7 +52,14 @@ def doctor(
         fatal = True
 
     if cfg is not None:
-        checks.append(("warn", f"Profile configured: {cfg.profile_id}" if cfg.profile_id else "No profile configured"))
+        checks.append(
+            (
+                "warn",
+                f"Profile configured: {cfg.profile_id}"
+                if cfg.profile_id
+                else "No profile configured",
+            )
+        )
 
         try:
             key_provider = FileKeyProvider(cfg.keystore_path)
@@ -97,7 +104,9 @@ def doctor(
             fatal = True
 
         if cfg.timestamper_type == "none":
-            checks.append(("warn", "No timestamper configured; RFC3161 recommended for wall-clock anchoring"))
+            checks.append(
+                ("warn", "No timestamper configured; RFC3161 recommended for wall-clock anchoring")
+            )
         elif cfg.timestamper_url:
             try:
                 request = urllib.request.Request(cfg.timestamper_url, method="HEAD")
@@ -112,7 +121,9 @@ def doctor(
         if not receipt_files:
             checks.append(("warn", "No receipts yet; skipping AERF and chain checks"))
         else:
-            checks.append(("warn", "AERF schema validation skipped (schema runtime not configured)"))
+            checks.append(
+                ("warn", "AERF schema validation skipped (schema runtime not configured)")
+            )
             if len(receipt_files) < 2:
                 checks.append(("warn", "Chain integrity skipped (<2 receipts)"))
             else:
@@ -121,13 +132,20 @@ def doctor(
                     from agentmint.notary import verify_chain
 
                     chain = verify_chain(receipts)
-                    checks.append(("ok" if chain.valid else "error", "Chain integrity verified" if chain.valid else chain.reason))
+                    checks.append(
+                        (
+                            "ok" if chain.valid else "error",
+                            "Chain integrity verified" if chain.valid else chain.reason,
+                        )
+                    )
                     fatal = fatal or not chain.valid
                 except Exception as exc:
                     checks.append(("error", f"Chain verification failed: {exc}"))
                     fatal = True
 
-        checks.append(("warn", f"Privacy counters: {_privacy.get_counters() or {'tsa': 0, 'sink': 0}}"))
+        checks.append(
+            ("warn", f"Privacy counters: {_privacy.get_counters() or {'tsa': 0, 'sink': 0}}")
+        )
 
     for check in checks:
         console_print(_render_check(check))

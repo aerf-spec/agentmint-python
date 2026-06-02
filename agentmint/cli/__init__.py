@@ -1,2 +1,1 @@
 """AgentMint CLI package."""
-

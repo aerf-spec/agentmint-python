@@ -30,7 +30,9 @@ def privacy(
             "  None" if not external else "\n".join(external),
             "",
             "Storage destinations:",
-            f"  {dim(str(cfg.sink_path))} (local)" if cfg.sink_type == "file" else f"  {dim(str(cfg.sink_path))} (remote)",
+            f"  {dim(str(cfg.sink_path))} (local)"
+            if cfg.sink_type == "file"
+            else f"  {dim(str(cfg.sink_path))} (remote)",
             f"  {dim(str(cfg.keystore_path))} (local)",
             "",
             "Telemetry, analytics, usage stats:",

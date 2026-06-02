@@ -26,7 +26,10 @@ def plan_cmd(
     cfg = load_config()
     store = FilePlanStore(cfg.keystore_path.parent)
     if subcommand == "list":
-        rows = [[accent(item["id"][:8]), item["name"], str(len(item["scope"])), item["expires_at"]] for item in store.list()]
+        rows = [
+            [accent(item["id"][:8]), item["name"], str(len(item["scope"])), item["expires_at"]]
+            for item in store.list()
+        ]
         console_print(table(["id", "name", "scope", "expires"], rows))
         return
     if subcommand == "show":
@@ -36,7 +39,9 @@ def plan_cmd(
         return
     if subcommand == "create":
         notary = Notary(key=cfg.keystore_path)
-        plan = notary.create_plan(user="local", action=name or "custom", scope=scope or ["*"], ttl_seconds=None)
+        plan = notary.create_plan(
+            user="local", action=name or "custom", scope=scope or ["*"], ttl_seconds=None
+        )
         store.save(plan, name or "custom", activate=True)
         cfg.plan_id = plan.id
         save_config(Path.cwd() / ".agentmint" / "config.toml", cfg)

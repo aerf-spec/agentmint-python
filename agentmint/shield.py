@@ -30,19 +30,22 @@ __all__ = ["scan", "ShieldResult", "Threat", "DEFAULT_PATTERNS"]
 
 # ── Data types ────────────────────────────────────────────
 
+
 @dataclass(frozen=True)
 class Threat:
     """A single detected threat."""
+
     pattern_name: str
-    category: str       # pii, secret, injection, encoding, structural
-    severity: str       # info, warn, block
-    field_path: str     # dot-separated path in scanned dict
+    category: str  # pii, secret, injection, encoding, structural
+    severity: str  # info, warn, block
+    field_path: str  # dot-separated path in scanned dict
     match_preview: str  # redacted — see _preview()
 
 
 @dataclass(frozen=True)
 class ShieldResult:
     """Result of scanning a dict for threats."""
+
     threats: tuple[Threat, ...] = ()
     scanned_fields: int = 0
 
@@ -79,73 +82,119 @@ class ShieldResult:
 
 _RAW: list[tuple[str, str, str, str]] = [
     # PII — detection, not blocking by default
-    ("ssn",         "pii", "warn",  r"\b\d{3}-\d{2}-\d{4}\b"),
-    ("email",       "pii", "info",  r"\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b"),
-    ("phone_us",    "pii", "info",  r"\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b"),
-    ("credit_card", "pii", "warn",  r"\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b"),
-
+    ("ssn", "pii", "warn", r"\b\d{3}-\d{2}-\d{4}\b"),
+    ("email", "pii", "info", r"\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b"),
+    ("phone_us", "pii", "info", r"\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b"),
+    ("credit_card", "pii", "warn", r"\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b"),
     # Secrets — should never appear in tool args or outputs
-    ("aws_access_key",  "secret", "block", r"\bAKIA[0-9A-Z]{16}\b"),
-    ("aws_secret_key",  "secret", "block",
-     r"(?i)(?:aws|secret)[_\s:=]{1,4}[A-Za-z0-9/+=]{40}"),
-    ("jwt", "secret", "block",
-     r"\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_\-]+\b"),
-    ("private_key", "secret", "block",
-     r"-----BEGIN\s+(?:RSA\s+|EC\s+|DSA\s+|OPENSSH\s+)?PRIVATE\s+KEY-----"),
-    ("generic_api_key", "secret", "warn",
-     r'(?i)(?:api[_\-]?key|token|secret)[\s:="\x27]+[A-Za-z0-9_\-]{20,}'),
-
+    ("aws_access_key", "secret", "block", r"\bAKIA[0-9A-Z]{16}\b"),
+    ("aws_secret_key", "secret", "block", r"(?i)(?:aws|secret)[_\s:=]{1,4}[A-Za-z0-9/+=]{40}"),
+    (
+        "jwt",
+        "secret",
+        "block",
+        r"\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_\-]+\b",
+    ),
+    (
+        "private_key",
+        "secret",
+        "block",
+        r"-----BEGIN\s+(?:RSA\s+|EC\s+|DSA\s+|OPENSSH\s+)?PRIVATE\s+KEY-----",
+    ),
+    (
+        "generic_api_key",
+        "secret",
+        "warn",
+        r'(?i)(?:api[_\-]?key|token|secret)[\s:="\x27]+[A-Za-z0-9_\-]{20,}',
+    ),
     # Prompt injection — known attack patterns (OWASP LLM Top 10)
-    ("ignore_instructions", "injection", "block",
-     r"(?i)ignore\s+(?:all\s+)?(?:previous|above|prior)\s+"
-     r"(?:instructions?|prompts?|rules?|guidelines?)"),
-    ("system_override", "injection", "block",
-     r"(?i)(?:system\s+override|override\s+system|admin\s+mode|developer\s+mode)"),
-    ("role_switch", "injection", "warn",
-     r"(?i)(?:you\s+are\s+now|act\s+as\s+(?:a|an|if)|"
-     r"pretend\s+(?:you(?:'re|\s+are)\s+)|"
-     r"from\s+now\s+on\s+you\s+are)"),
-    ("reveal_prompt", "injection", "block",
-     r"(?i)(?:reveal|show|display|output|print|repeat)"
-     r"\s+(?:your\s+)?(?:system\s+)?(?:prompt|instructions|rules)"),
-    ("data_exfil", "injection", "block",
-     r"(?i)(?:send|post|upload|transmit|forward|exfiltrate)"
-     r"\s+.{0,40}(?:to|at)\s+https?://"),
-    ("forget_instructions", "injection", "block",
-     r"(?i)forget\s+(?:"
-     r"everything|"
-     r"all(?:\s+(?:your|the|previous))?\s+(?:instructions?|rules?|context|guidelines?)|"
-     r"your\s+(?:previous\s+)?(?:instructions?|rules?|context|guidelines?)"
-     r")"),
-    ("dump_sensitive", "injection", "block",
-     r"(?i)(?:output|dump|print|list|show|reveal)\s+(?:all\s+)?"
-     r"(?:api[_\s]?keys?|credentials?|secrets?|passwords?|tokens?)"),
+    (
+        "ignore_instructions",
+        "injection",
+        "block",
+        r"(?i)ignore\s+(?:all\s+)?(?:previous|above|prior)\s+"
+        r"(?:instructions?|prompts?|rules?|guidelines?)",
+    ),
+    (
+        "system_override",
+        "injection",
+        "block",
+        r"(?i)(?:system\s+override|override\s+system|admin\s+mode|developer\s+mode)",
+    ),
+    (
+        "role_switch",
+        "injection",
+        "warn",
+        r"(?i)(?:you\s+are\s+now|act\s+as\s+(?:a|an|if)|"
+        r"pretend\s+(?:you(?:'re|\s+are)\s+)|"
+        r"from\s+now\s+on\s+you\s+are)",
+    ),
+    (
+        "reveal_prompt",
+        "injection",
+        "block",
+        r"(?i)(?:reveal|show|display|output|print|repeat)"
+        r"\s+(?:your\s+)?(?:system\s+)?(?:prompt|instructions|rules)",
+    ),
+    (
+        "data_exfil",
+        "injection",
+        "block",
+        r"(?i)(?:send|post|upload|transmit|forward|exfiltrate)"
+        r"\s+.{0,40}(?:to|at)\s+https?://",
+    ),
+    (
+        "forget_instructions",
+        "injection",
+        "block",
+        r"(?i)forget\s+(?:"
+        r"everything|"
+        r"all(?:\s+(?:your|the|previous))?\s+(?:instructions?|rules?|context|guidelines?)|"
+        r"your\s+(?:previous\s+)?(?:instructions?|rules?|context|guidelines?)"
+        r")",
+    ),
+    (
+        "dump_sensitive",
+        "injection",
+        "block",
+        r"(?i)(?:output|dump|print|list|show|reveal)\s+(?:all\s+)?"
+        r"(?:api[_\s]?keys?|credentials?|secrets?|passwords?|tokens?)",
+    ),
     # Encoding anomalies — evasion detection
-    ("unicode_control", "encoding", "warn",
-     r"[\u200b\u200c\u200d\u200e\u200f\u202a-\u202e\u2060\ufeff]"),
-    ("url_encoded_chain", "encoding", "warn",
-     r"(?:%[0-9A-Fa-f]{2}){4,}"),
-
+    (
+        "unicode_control",
+        "encoding",
+        "warn",
+        r"[\u200b\u200c\u200d\u200e\u200f\u202a-\u202e\u2060\ufeff]",
+    ),
+    ("url_encoded_chain", "encoding", "warn", r"(?:%[0-9A-Fa-f]{2}){4,}"),
     # Structural injection — instruction-like content in data
-    ("system_role_tag", "structural", "warn",
-     r"(?i)<\|?(?:im_start|system|assistant|user)\|?>"),
-    ("html_injection", "structural", "warn",
-     r"(?i)<(?:script|iframe|object|embed|form|img\s+[^>]*onerror)[^>]*>"),
-    ("markdown_link_injection", "structural", "warn",
-     r"!\[.*?\]\((?:javascript|data|vbscript):"),
+    ("system_role_tag", "structural", "warn", r"(?i)<\|?(?:im_start|system|assistant|user)\|?>"),
+    (
+        "html_injection",
+        "structural",
+        "warn",
+        r"(?i)<(?:script|iframe|object|embed|form|img\s+[^>]*onerror)[^>]*>",
+    ),
+    ("markdown_link_injection", "structural", "warn", r"!\[.*?\]\((?:javascript|data|vbscript):"),
 ]
 
 DEFAULT_PATTERNS: list[tuple[str, str, str, re.Pattern[str]]] = [
-    (name, cat, sev, re.compile(rx, re.IGNORECASE))
-    for name, cat, sev, rx in _RAW
+    (name, cat, sev, re.compile(rx, re.IGNORECASE)) for name, cat, sev, rx in _RAW
 ]
 
 
 # ── Fuzzy typo detection (OWASP typoglycemia defense) ─────
 
 _FUZZY_TARGETS: tuple[str, ...] = (
-    "ignore", "bypass", "override", "reveal",
-    "delete", "system", "inject", "prompt",
+    "ignore",
+    "bypass",
+    "override",
+    "reveal",
+    "delete",
+    "system",
+    "inject",
+    "prompt",
 )
 _FUZZY_SORTED: dict[str, str] = {t: "".join(sorted(t)) for t in _FUZZY_TARGETS}
 
@@ -160,6 +209,7 @@ def _is_typo_variant(word: str, target: str) -> bool:
 
 
 # ── Entropy detection ─────────────────────────────────────
+
 
 def _shannon_entropy(s: str) -> float:
     """Shannon entropy in bits per character."""
@@ -184,6 +234,7 @@ def _is_plausible_base64(s: str) -> bool:
 
 # ── Preview helper ────────────────────────────────────────
 
+
 def _preview(text: str, category: str) -> str:
     """Redacted preview. PII/secrets get heavy redaction. Others show context."""
     text = text.strip()[:60]
@@ -197,6 +248,7 @@ def _preview(text: str, category: str) -> str:
 
 
 # ── Field extraction (generator — constant memory) ────────
+
 
 def _walk_strings(data: Any, prefix: str = "") -> Iterator[tuple[str, str]]:
     """Yield (field_path, string_value) from nested dicts/lists."""
@@ -212,6 +264,7 @@ def _walk_strings(data: Any, prefix: str = "") -> Iterator[tuple[str, str]]:
 
 
 # ── Core scan ─────────────────────────────────────────────
+
 
 def scan(
     data: dict[str, Any] | str,
@@ -245,38 +298,44 @@ def scan(
         # Regex patterns
         for name, category, severity, regex in patterns:
             for match in regex.finditer(text):
-                threats.append(Threat(
-                    pattern_name=name,
-                    category=category,
-                    severity=severity,
-                    field_path=field_path,
-                    match_preview=_preview(match.group(), category),
-                ))
+                threats.append(
+                    Threat(
+                        pattern_name=name,
+                        category=category,
+                        severity=severity,
+                        field_path=field_path,
+                        match_preview=_preview(match.group(), category),
+                    )
+                )
 
         # Fuzzy typo detection
         if enable_fuzzy:
             for word in re.findall(r"\b[a-zA-Z]{4,}\b", text.lower()):
                 for target in _FUZZY_TARGETS:
                     if _is_typo_variant(word, target):
-                        threats.append(Threat(
-                            pattern_name=f"typo_{target}",
-                            category="injection",
-                            severity="warn",
-                            field_path=field_path,
-                            match_preview=word,
-                        ))
+                        threats.append(
+                            Threat(
+                                pattern_name=f"typo_{target}",
+                                category="injection",
+                                severity="warn",
+                                field_path=field_path,
+                                match_preview=word,
+                            )
+                        )
 
         # High-entropy string detection
         if enable_entropy:
             for tok in re.finditer(r"[A-Za-z0-9+/=_\-]{24,}", text):
                 token = tok.group()
                 if _shannon_entropy(token) >= 4.5 and _is_plausible_base64(token):
-                    threats.append(Threat(
-                        pattern_name="high_entropy_base64",
-                        category="encoding",
-                        severity="warn",
-                        field_path=field_path,
-                        match_preview=_preview(token, "encoding"),
-                    ))
+                    threats.append(
+                        Threat(
+                            pattern_name="high_entropy_base64",
+                            category="encoding",
+                            severity="warn",
+                            field_path=field_path,
+                            match_preview=_preview(token, "encoding"),
+                        )
+                    )
 
     return ShieldResult(threats=tuple(threats), scanned_fields=field_count)

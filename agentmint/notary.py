@@ -85,12 +85,15 @@ DEFAULT_TSA_URLS: Final[list[str]] = [
 
 # ── Errors ─────────────────────────────────────────────────
 
+
 class NotaryError(Exception):
     """Raised when notarisation fails. Message is always actionable."""
+
     pass
 
 
 # ── Validation ─────────────────────────────────────────────
+
 
 def _require_non_empty_string(value: str, name: str, max_len: int) -> str:
     if not isinstance(value, str):
@@ -138,19 +141,22 @@ def _clamp_ttl(ttl: int) -> int:
 
 # ── PEM helper ─────────────────────────────────────────────
 
+
 def _public_key_pem(verify_key: VerifyKey) -> str:
     """Encode an Ed25519 public key as SPKI PEM (RFC 8410)."""
     der = _SPKI_PREFIX + bytes(verify_key)
     b64 = base64.b64encode(der).decode()
-    lines = [b64[i:i + 64] for i in range(0, len(b64), 64)]
+    lines = [b64[i : i + 64] for i in range(0, len(b64), 64)]
     return "-----BEGIN PUBLIC KEY-----\n" + "\n".join(lines) + "\n-----END PUBLIC KEY-----\n"
 
 
 # ── Policy evaluation ─────────────────────────────────────
 
+
 @dataclass(frozen=True)
 class PolicyEvaluation:
     """Result of evaluating an action against a plan's policy rules."""
+
     in_policy: bool
     reason: str
 
@@ -179,6 +185,7 @@ def evaluate_policy(
 
 # ── Signing ────────────────────────────────────────────────
 
+
 def _canonical_json(data: dict[str, Any]) -> bytes:
     return json.dumps(data, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
@@ -202,9 +209,11 @@ def _verify_signature(verify_key: VerifyKey, data: dict[str, Any], signature_hex
 
 # ── Data classes ───────────────────────────────────────────
 
+
 @dataclass(frozen=True)
 class PlanReceipt:
     """Signed plan defining what actions are allowed."""
+
     id: str
     user: str
     action: str
@@ -247,6 +256,7 @@ class PlanReceipt:
 @dataclass(frozen=True)
 class NotarisedReceipt:
     """Signed, timestamped evidence receipt for a single agent action."""
+
     id: str
     plan_id: str
     agent: str
@@ -342,9 +352,11 @@ class NotarisedReceipt:
 
 # ── Chain verification ─────────────────────────────────────
 
+
 @dataclass(frozen=True)
 class ChainVerification:
     """Result of verifying receipt chain integrity."""
+
     valid: bool
     length: int
     root_hash: str
@@ -369,32 +381,35 @@ def verify_chain(receipts: list[NotarisedReceipt]) -> ChainVerification:
 
     if receipts[0].previous_receipt_hash is not None:
         return ChainVerification(
-            valid=False, length=len(receipts), root_hash="",
-            break_at_index=0, reason="first receipt has non-null chain hash"
+            valid=False,
+            length=len(receipts),
+            root_hash="",
+            break_at_index=0,
+            reason="first receipt has non-null chain hash",
         )
 
     prev_hash: Optional[str] = None
     for i, receipt in enumerate(receipts):
         if receipt.previous_receipt_hash != prev_hash:
             return ChainVerification(
-                valid=False, length=len(receipts), root_hash="",
+                valid=False,
+                length=len(receipts),
+                root_hash="",
                 break_at_index=i,
                 reason=f"chain break at index {i}: expected {prev_hash}, "
-                       f"got {receipt.previous_receipt_hash}"
+                f"got {receipt.previous_receipt_hash}",
             )
         # Compute hash of this receipt for next iteration
-        signed_payload = _canonical_json({
-            **receipt.signable_dict(),
-            "signature": receipt.signature
-        })
+        signed_payload = _canonical_json(
+            {**receipt.signable_dict(), "signature": receipt.signature}
+        )
         prev_hash = hashlib.sha256(signed_payload).hexdigest()
 
-    return ChainVerification(
-        valid=True, length=len(receipts), root_hash=prev_hash or ""
-    )
+    return ChainVerification(valid=True, length=len(receipts), root_hash=prev_hash or "")
 
 
 # ── Evidence package ───────────────────────────────────────
+
 
 class EvidencePackage:
     """Collects receipts into a portable, verifiable zip.
@@ -415,9 +430,13 @@ class EvidencePackage:
 
     __slots__ = ("_plan", "_receipts", "_public_key_pem", "_key", "_tsa_urls")
 
-    def __init__(self, plan: PlanReceipt, public_key_pem: str = "",
-                 signing_key: Optional[SigningKey] = None,
-                 tsa_urls: Optional[list[str]] = None) -> None:
+    def __init__(
+        self,
+        plan: PlanReceipt,
+        public_key_pem: str = "",
+        signing_key: Optional[SigningKey] = None,
+        tsa_urls: Optional[list[str]] = None,
+    ) -> None:
         self._plan = plan
         self._receipts: list[NotarisedReceipt] = []
         self._public_key_pem = public_key_pem
@@ -472,17 +491,19 @@ class EvidencePackage:
         entries = []
         for r in self._receipts:
             has_ts = r.timestamp_result is not None
-            entries.append({
-                "receipt_id": r.id,
-                "short_id": r.short_id,
-                "action": r.action,
-                "agent": r.agent,
-                "in_policy": r.in_policy,
-                "policy_reason": r.policy_reason,
-                "observed_at": r.observed_at,
-                "previous_receipt_hash": r.previous_receipt_hash,
-                "tsr_file": f"receipts/{r.id}.tsr" if has_ts else None,
-            })
+            entries.append(
+                {
+                    "receipt_id": r.id,
+                    "short_id": r.short_id,
+                    "action": r.action,
+                    "agent": r.agent,
+                    "in_policy": r.in_policy,
+                    "policy_reason": r.policy_reason,
+                    "observed_at": r.observed_at,
+                    "previous_receipt_hash": r.previous_receipt_hash,
+                    "tsr_file": f"receipts/{r.id}.tsr" if has_ts else None,
+                }
+            )
 
         index: dict[str, Any] = {
             "package_created": _utc_now().isoformat(),
@@ -505,12 +526,15 @@ class EvidencePackage:
         }
 
         if chain_result.root_hash and self._key:
-            chain_info["root_signature"] = _sign(self._key, {
-                "type": "chain_root",
-                "root_hash": chain_result.root_hash,
-                "length": chain_result.length,
-                "plan_id": self._plan.id,
-            })
+            chain_info["root_signature"] = _sign(
+                self._key,
+                {
+                    "type": "chain_root",
+                    "root_hash": chain_result.root_hash,
+                    "length": chain_result.length,
+                    "plan_id": self._plan.id,
+                },
+            )
 
             # Optional: timestamp the chain root
             try:
@@ -565,13 +589,16 @@ class EvidencePackage:
                 for item in zin.infolist():
                     data = zin.read(item.filename)
                     if item.filename == "VERIFY.sh":
-                        perms = stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH
+                        perms = (
+                            stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH
+                        )
                         item.external_attr = perms << 16
                     zout.writestr(item, data)
         shutil.move(str(tmp_path), str(zip_path))
 
 
 # ── Timestamp with fallback ───────────────────────────────
+
 
 def _timestamp_with_fallback(
     data: bytes,
@@ -599,6 +626,7 @@ _CHAIN_STATE_FILE = "chain_state.json"
 
 # ── Policy hash ───────────────────────────────────────────
 
+
 def _compute_policy_hash(plan: PlanReceipt) -> str:
     """SHA-256 of canonical(scope + checkpoints + delegates_to)."""
     policy_data = {
@@ -610,6 +638,7 @@ def _compute_policy_hash(plan: PlanReceipt) -> str:
 
 
 # ── Scope intersection for delegation ─────────────────────
+
 
 def intersect_scopes(
     parent_scope: Sequence[str],
@@ -654,8 +683,11 @@ def _load_chain_state(key_dir: Optional[Path]) -> dict[str, Optional[str]]:
         if not isinstance(data, dict):
             return {}
         # Validate: all keys are strings, all values are str or None
-        return {k: v for k, v in data.items()
-                if isinstance(k, str) and (v is None or isinstance(v, str))}
+        return {
+            k: v
+            for k, v in data.items()
+            if isinstance(k, str) and (v is None or isinstance(v, str))
+        }
     except (json.JSONDecodeError, OSError):
         return {}
 
@@ -687,9 +719,20 @@ class Notary:
     """
 
     __slots__ = (
-        "_key", "_vk", "_key_id", "_key_dir", "_package", "_chain_hashes", "_tsa_urls",
-        "_circuit_breaker", "_sink", "_mode",
-        "_session_id", "_session_policy", "_session_counters", "_session_trajectory",
+        "_key",
+        "_vk",
+        "_key_id",
+        "_key_dir",
+        "_package",
+        "_chain_hashes",
+        "_tsa_urls",
+        "_circuit_breaker",
+        "_sink",
+        "_mode",
+        "_session_id",
+        "_session_policy",
+        "_session_counters",
+        "_session_trajectory",
         "_child_plans",
     )
 
@@ -709,6 +752,7 @@ class Notary:
             self._key_dir: Optional[Path] = None
         elif isinstance(key, (str, Path)):
             from .keystore import KeyStore
+
             self._key_dir = Path(key)
             ks = KeyStore(self._key_dir)
             self._key = ks.signing_key
@@ -803,8 +847,10 @@ class Notary:
         self._chain_hashes[plan_id] = None
         _save_chain_state(self._key_dir, self._chain_hashes)
         self._package = EvidencePackage(
-            plan, _public_key_pem(self._vk),
-            signing_key=self._key, tsa_urls=self._tsa_urls,
+            plan,
+            _public_key_pem(self._vk),
+            signing_key=self._key,
+            tsa_urls=self._tsa_urls,
         )
         return plan
 
@@ -834,7 +880,10 @@ class Notary:
             if not br.is_allowed:
                 # Short-circuit: build a denied receipt without policy eval
                 return self._make_denied_receipt(
-                    action, agent, plan, evidence,
+                    action,
+                    agent,
+                    plan,
+                    evidence,
                     f"circuit_breaker:{br.reason}",
                     enable_timestamp,
                 )
@@ -889,12 +938,13 @@ class Notary:
                         session_escalation = f"escalate:{pattern}:{count}/{escalate_after}"
 
         # Session deny overrides policy evaluation
-        is_session_denied = (
-            session_escalation is not None
-            and session_escalation.startswith("denied:")
+        is_session_denied = session_escalation is not None and session_escalation.startswith(
+            "denied:"
         )
         final_in_policy = False if is_session_denied else evaluation.in_policy
-        final_reason = session_escalation or evaluation.reason if is_session_denied else evaluation.reason
+        final_reason = (
+            session_escalation or evaluation.reason if is_session_denied else evaluation.reason
+        )
 
         # Enforcement mode: shadow/warn evaluate fully but never block
         mode_str = self._mode.value
@@ -984,7 +1034,6 @@ class Notary:
             for pattern in self._session_policy:
                 if matches_pattern(action, pattern):
                     self._session_counters[pattern] = self._session_counters.get(pattern, 0) + 1
-
 
         return receipt
 
@@ -1134,6 +1183,7 @@ class Notary:
 
 # ── VERIFY.sh (timestamps only — pure OpenSSL, zero dependencies) ──
 
+
 def _build_verify_script(receipts: list[NotarisedReceipt]) -> str:
     """Generate VERIFY.sh — checks RFC 3161 timestamps with OpenSSL.
 
@@ -1145,7 +1195,7 @@ def _build_verify_script(receipts: list[NotarisedReceipt]) -> str:
         "# Requires: openssl",
         "# For Ed25519 signatures: python3 verify_sigs.py",
         "",
-        'set -euo pipefail',
+        "set -euo pipefail",
         'cd "$(dirname "$0")"',
         "",
         "VERIFIED=0",
@@ -1171,35 +1221,37 @@ def _build_verify_script(receipts: list[NotarisedReceipt]) -> str:
             lines.append("FLAGGED=$((FLAGGED + 1))")
 
         if has_ts:
-            lines.append('if openssl ts -verify \\')
+            lines.append("if openssl ts -verify \\")
             lines.append(f'    -in "receipts/{rid}.tsr" \\')
             lines.append(f'    -queryfile "receipts/{rid}.tsq" \\')
             lines.append('    -CAfile "freetsa_cacert.pem" \\')
             lines.append('    -untrusted "freetsa_tsa.crt" \\')
-            lines.append('    > /dev/null 2>&1; then')
+            lines.append("    > /dev/null 2>&1; then")
             lines.append('  echo "  Timestamp: ✓ verified"')
-            lines.append('  VERIFIED=$((VERIFIED + 1))')
-            lines.append('else')
+            lines.append("  VERIFIED=$((VERIFIED + 1))")
+            lines.append("else")
             lines.append('  echo "  Timestamp: ✗ FAILED"')
-            lines.append('  FAILED=$((FAILED + 1))')
-            lines.append('fi')
+            lines.append("  FAILED=$((FAILED + 1))")
+            lines.append("fi")
         else:
             lines.append('echo "  Timestamp: (not requested)"')
 
         lines.append("TOTAL=$((TOTAL + 1))")
         lines.append('echo ""')
 
-    lines.extend([
-        'echo "════════════════════════════════════════"',
-        'echo "  Timestamps: $VERIFIED / $TOTAL verified"',
-        'echo "  Failures:   $FAILED"',
-        'echo "  Flagged:    $FLAGGED out-of-policy"',
-        'echo "  Signatures: run python3 verify_sigs.py"',
-        'echo "════════════════════════════════════════"',
-        "",
-        '[ "$FAILED" -gt 0 ] && exit 1',
-        'exit 0',
-    ])
+    lines.extend(
+        [
+            'echo "════════════════════════════════════════"',
+            'echo "  Timestamps: $VERIFIED / $TOTAL verified"',
+            'echo "  Failures:   $FAILED"',
+            'echo "  Flagged:    $FLAGGED out-of-policy"',
+            'echo "  Signatures: run python3 verify_sigs.py"',
+            'echo "════════════════════════════════════════"',
+            "",
+            '[ "$FAILED" -gt 0 ] && exit 1',
+            "exit 0",
+        ]
+    )
 
     return "\n".join(lines) + "\n"
 
@@ -1258,6 +1310,7 @@ sys.exit(1 if fail else 0)
 
 
 # ── Utilities ──────────────────────────────────────────────
+
 
 def _utc_now() -> datetime:
     return datetime.now(timezone.utc)

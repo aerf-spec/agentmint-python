@@ -30,11 +30,13 @@ class VerificationResult:
 
 def _parse_public_key_pem(path: Path) -> VerifyKey:
     text = path.read_text()
-    body = "".join(line.strip() for line in text.splitlines() if "BEGIN" not in line and "END" not in line)
+    body = "".join(
+        line.strip() for line in text.splitlines() if "BEGIN" not in line and "END" not in line
+    )
     der = base64.b64decode(body.encode("ascii"))
     if not der.startswith(_SPKI_PREFIX):
         raise ValueError("unsupported public key format")
-    return VerifyKey(der[len(_SPKI_PREFIX):])
+    return VerifyKey(der[len(_SPKI_PREFIX) :])
 
 
 def _receipt_from_dict(data: Dict[str, Any]) -> NotarisedReceipt:
@@ -114,12 +116,16 @@ def verify_receipt_path(path: Path, public_key_path: Optional[Path] = None) -> V
             return VerificationResult(False, "receipt", target, receipt.id, "missing public key")
         verify_key = _parse_public_key_pem(key_path)
         ok = _verify_signature(verify_key, receipt.signable_dict(), receipt.signature)
-        return VerificationResult(ok, "receipt", target, receipt.id, "" if ok else "signature mismatch", str(key_path))
+        return VerificationResult(
+            ok, "receipt", target, receipt.id, "" if ok else "signature mismatch", str(key_path)
+        )
     except Exception as exc:
         return VerificationResult(False, "receipt", target, reason=str(exc))
 
 
-def verify_directory(path: Path, public_key_path: Optional[Path] = None) -> List[VerificationResult]:
+def verify_directory(
+    path: Path, public_key_path: Optional[Path] = None
+) -> List[VerificationResult]:
     key_path = public_key_path or infer_public_key_path(Path(path))
     return [verify_receipt_path(receipt_path, key_path) for receipt_path in list_receipts(path)]
 

@@ -53,8 +53,29 @@ _FRAMEWORKS = [
 ]
 
 _DOMAIN_TERMS = {
-    "healthcare": ["CPT ", "ICD-10", "ICD10", "HIPAA", "prior_auth", "PHI", "patient_id", "payer_id", "claim_submission", "EHR", "FHIR"],
-    "finance": ["SWIFT", "KYC", "AML", "BSA", "wire_transfer", "ACH ", "settlement", "compliance_check"],
+    "healthcare": [
+        "CPT ",
+        "ICD-10",
+        "ICD10",
+        "HIPAA",
+        "prior_auth",
+        "PHI",
+        "patient_id",
+        "payer_id",
+        "claim_submission",
+        "EHR",
+        "FHIR",
+    ],
+    "finance": [
+        "SWIFT",
+        "KYC",
+        "AML",
+        "BSA",
+        "wire_transfer",
+        "ACH ",
+        "settlement",
+        "compliance_check",
+    ],
     "legal": ["Bates", "discovery_request", "privileged", "subpoena", "deposition", "matter_id"],
 }
 
@@ -71,7 +92,11 @@ def _gitignore_patterns(root: Path) -> List[str]:
 
 
 def _ignored(relative_path: str, patterns: List[str]) -> bool:
-    return any(fnmatch.fnmatch(relative_path, pattern) or fnmatch.fnmatch(os.path.basename(relative_path), pattern) for pattern in patterns)
+    return any(
+        fnmatch.fnmatch(relative_path, pattern)
+        or fnmatch.fnmatch(os.path.basename(relative_path), pattern)
+        for pattern in patterns
+    )
 
 
 def _python_version(root: Path) -> str:
@@ -127,7 +152,9 @@ def scan_project(path: Path) -> ScanResult:
         frameworks=frameworks,
         domain_signals=domain_signals,
         existing_config=(root / ".agentmint" / "config.toml").exists(),
-        existing_keystore=keystore.is_dir() and any(keystore.iterdir()) if keystore.exists() else False,
+        existing_keystore=keystore.is_dir() and any(keystore.iterdir())
+        if keystore.exists()
+        else False,
         file_count=total_count,
         project_root=root,
     )
