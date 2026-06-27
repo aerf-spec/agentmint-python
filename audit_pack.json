@@ -23,73 +23,73 @@
   },
   "attestations": [
     {
-      "receipt": "c199934c",
+      "receipt": "1b95be21",
       "note": "physician sign-off"
     }
   ],
   "receipts": [
     {
-      "id": "aae024a6",
+      "id": "b4818d03",
       "action": "read:PT-4827:clinical-note",
       "in_policy": true,
       "reason": "matched read:PT-4827:clinical-note",
       "prev": null,
-      "ts": "2026-06-27T16:23:16.807916+00:00",
-      "sig": "829c7810388dbd5c"
+      "ts": "2026-06-27T17:50:37.550558+00:00",
+      "sig": "928ddd577f52b80a"
     },
     {
-      "id": "43a6060f",
+      "id": "21a4d51f",
       "action": "read:PT-4827:eligibility",
       "in_policy": true,
       "reason": "matched read:PT-4827:eligibility",
-      "prev": "939c776585e71395",
-      "ts": "2026-06-27T16:23:17.408250+00:00",
-      "sig": "dc21b6b2d7370e17"
+      "prev": "768cbfe2eaabc2bd",
+      "ts": "2026-06-27T17:50:37.550597+00:00",
+      "sig": "d9abd4c844be251d"
     },
     {
-      "id": "d3199b8e",
+      "id": "47090797",
       "action": "read:PT-4827:payer-policy",
       "in_policy": true,
       "reason": "matched read:PT-4827:payer-policy",
-      "prev": "e5a0c4d7468ec513",
-      "ts": "2026-06-27T16:23:18.008549+00:00",
-      "sig": "30e8759658f9923a"
+      "prev": "c99794258d919438",
+      "ts": "2026-06-27T17:50:37.550623+00:00",
+      "sig": "9dc500b428f67c61"
     },
     {
-      "id": "f84b6236",
+      "id": "28e8b4a3",
       "action": "read:PT-9914:clinical-note",
       "in_policy": false,
       "reason": "out of scope",
-      "prev": "c9435eeacf87c594",
-      "ts": "2026-06-27T16:23:18.608874+00:00",
-      "sig": "247faafa2bfd9021"
+      "prev": "a4d2879e9f49b3f0",
+      "ts": "2026-06-27T17:50:37.550647+00:00",
+      "sig": "88965ef068c30151"
     },
     {
-      "id": "a5e3a4d3",
+      "id": "9f4a40f2",
       "action": "read:PT-4827:behavioral-health",
       "in_policy": false,
       "reason": "out of scope",
-      "prev": "7c1a9f5fc708f459",
-      "ts": "2026-06-27T16:23:21.609137+00:00",
-      "sig": "db11f11d8b163784"
+      "prev": "3b3f35c3eb48a97a",
+      "ts": "2026-06-27T17:50:37.550671+00:00",
+      "sig": "fff80fd31ab61df4"
     },
     {
-      "id": "c199934c",
+      "id": "1b95be21",
       "action": "submit:PT-4827:auth-request",
       "in_policy": true,
       "reason": "checkpoint: submit:* | attested",
-      "prev": "d503f69646fc0a16",
-      "ts": "2026-06-27T16:23:24.609426+00:00",
-      "sig": "aba6d21f24d67210"
+      "prev": "f851a1ee011e7ea2",
+      "ts": "2026-06-27T17:50:37.550695+00:00",
+      "sig": "63413d5151248e10"
     },
     {
-      "id": "2b2861df",
+      "id": "d3b3934e",
       "action": "write:PT-4827:ehr-approval",
       "in_policy": true,
       "reason": "matched write:PT-4827:ehr-approval",
-      "prev": "d538a66d0aae0788",
-      "ts": "2026-06-27T16:23:26.109822+00:00",
-      "sig": "48e0e78794c3bde6"
+      "prev": "9166dcf230dcce35",
+      "ts": "2026-06-27T17:50:37.550724+00:00",
+      "sig": "a818be089ca9515c"
     }
   ]
 }

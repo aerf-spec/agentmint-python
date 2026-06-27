@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Local Demo | AgentMint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0B1120;--fg:#E2E8F0;--surface:#141E30;--border:#1E3A5F;--code-bg:#0D1117;--code-border:#21262d;--blue:#3B82F6;--green:#10B981;--red:#EF4444;--yellow:#FBBF24;--gray:#94A3B8;--dim:#64748B;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--fg);line-height:1.6;-webkit-font-smoothing:antialiased;}
+.nav{padding:14px 20px;border-bottom:1px solid var(--border);background:rgba(11,17,32,.95);}
+.nav-inner{max-width:980px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;}
+.nav-brand{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--fg);text-decoration:none;}
+.nav-brand span{color:var(--blue);}
+.nav-link{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--gray);text-decoration:none;}
+main{max-width:980px;margin:0 auto;padding:40px 20px 64px;}
+h1{font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;margin-bottom:8px;}
+.sub{color:var(--gray);font-size:14px;margin-bottom:8px;}
+.flow{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--blue);margin-bottom:28px;}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+.tab{font-family:'JetBrains Mono',monospace;font-size:12px;padding:8px 14px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--gray);cursor:pointer;transition:.15s;}
+.tab:hover{border-color:var(--blue);color:var(--fg);}
+.tab.active{border-color:var(--blue);background:rgba(59,130,246,.12);color:var(--fg);}
+.terminal{background:var(--code-bg);border:1px solid var(--code-border);border-radius:10px;overflow:hidden;}
+.term-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--code-border);}
+.dot{width:11px;height:11px;border-radius:50%;}
+.dot.r{background:#ff5f56;}.dot.y{background:#ffbd2e;}.dot.g{background:#27c93f;}
+.term-title{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);margin-left:6px;}
+.term-body{display:none;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.55;padding:18px 20px;white-space:pre;overflow-x:auto;color:var(--fg);}
+.term-body.active{display:block;}
+.legend{margin-top:18px;display:flex;flex-wrap:wrap;gap:16px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--gray);}
+.legend b{font-weight:600;}
+.note{margin-top:18px;font-size:13px;color:var(--gray);line-height:1.7;}
+.note code{font-family:'JetBrains Mono',monospace;background:var(--surface);padding:2px 6px;border-radius:4px;color:var(--fg);}
+.footer{border-top:1px solid var(--border);padding:24px 0;text-align:center;color:var(--dim);font-size:12px;}
+.fg{color:var(--fg);}.gray{color:var(--gray);}.dim{color:var(--dim);}.blue{color:var(--blue);}
+.green{color:var(--green);}.red{color:var(--red);}.yellow{color:var(--yellow);}.b{font-weight:700;}
+</style>
+</head>
+<body>
+<nav class="nav"><div class="nav-inner">
+  <a href="/" class="nav-brand">Agent<span>Mint</span></a>
+  <a class="nav-link" href="https://github.com/aerf-spec/agentmint-python" target="_blank">GitHub</a>
+</div></nav>
+<main>
+  <h1>AgentMint &mdash; Local Demo</h1>
+  <p class="sub">Signed-plan gating for an AI agent's tool calls. Synthetic prior-auth scenario.</p>
+  <p class="flow">flow: plan -&gt; gate -&gt; tools -&gt; receipts -&gt; verify</p>
+  <div class="tabs"><button class="tab active" data-tab="wrong">Without AgentMint</button>
+    <button class="tab" data-tab="instrument">Instrument</button>
+    <button class="tab" data-tab="right">With AgentMint</button>
+    <button class="tab" data-tab="verify">Verify</button>
+    <button class="tab" data-tab="tamper">Tamper</button></div>
+  <div class="terminal">
+    <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">demo.py &middot; chunks.py</span></div>
+    <pre class="term-body active" id="panel-wrong"><span class="dim">  No plan, no gate. The agent calls whatever the prompt and note suggest.</span>
+
+<span class="fg">  → read_patient_record  read:PT-4827:clinical-note      </span><span class="green">ok</span>
+<span class="fg">  → read_patient_record  read:PT-4827:eligibility        </span><span class="green">ok</span>
+<span class="fg">  → read_patient_record  read:PT-4827:payer-policy       </span><span class="green">ok</span>
+<span class="fg">  → read_patient_record  read:PT-9914:clinical-note      </span><span class="green">ok</span><span class="red">  ← different patient</span>
+<span class="fg">  → read_patient_record  read:PT-4827:behavioral-health  </span><span class="green">ok</span><span class="red">  ← sensitive, outside the case</span>
+<span class="fg">  → submit_auth_request  submit:PT-4827:auth-request     </span><span class="green">ok</span><span class="red">  ← no human sign-off</span>
+<span class="fg">  → write_to_ehr         write:PT-4827:ehr-approval      </span><span class="green">ok</span>
+
+<span class="red b">  Outcome (no AgentMint):</span>
+<span class="red">    ✗ read another patient&#x27;s record (PT-9914) from a note reference</span>
+<span class="red">    ✗ read behavioral-health data outside the case</span>
+<span class="red">    ✗ submitted and wrote with no human checkpoint</span>
+<span class="red">    ✗ no signed receipts — nothing to verify or audit afterward</span></pre>
+    <pre class="term-body" id="panel-instrument"><span class="dim">  The signed plan is created from the CLI, before any runtime starts.</span>
+
+<span class="gray">  $ agentmint init . --yes</span>
+<span class="dim">  created .agentmint/ keystore and local signing material</span>
+
+<span class="gray">  $ agentmint plan create --name prior-auth-demo \</span>
+<span class="gray">      --scope read:PT-4827:clinical-note \</span>
+<span class="gray">      --scope read:PT-4827:eligibility \</span>
+<span class="gray">      --scope read:PT-4827:payer-policy \</span>
+<span class="gray">      --scope submit:PT-4827:auth-request \</span>
+<span class="gray">      --scope write:PT-4827:ehr-approval \</span>
+<span class="green">  ✓ Plan created 92790486-7b83-48c8-b09f-fb2ba739e4fb</span>
+
+<span class="gray">  $ agentmint plan show 92790486</span>
+<span class="dim">  Plan 92790486</span>
+<span class="dim">  </span>
+<span class="dim">  User: local</span>
+<span class="dim">  Action: prior-auth-demo</span>
+<span class="dim">  Scope: read:PT-4827:clinical-note, read:PT-4827:eligibility, </span>
+<span class="dim">  read:PT-4827:payer-policy, submit:PT-4827:auth-request, </span>
+<span class="dim">  write:PT-4827:ehr-approval</span>
+<span class="dim">  Delegates: none</span>
+<span class="dim">  Expires: 9999-12-31T23:59:59.999999+00:00</span>
+
+<span class="dim">  Instrumentation: route every tool call through the gate before it runs.</span>
+
+<span class="blue">    def guarded(tool, args):              # your agent calls tools through this</span>
+<span class="blue">        action = to_action(tool, args)    # map the call to a policy action</span>
+<span class="blue">        ok, why = gate(action, plan)      # check it against the signed scope</span>
+<span class="blue">        chain.add(action, ok, why)        # sign + hash-link a receipt either way</span>
+<span class="blue">        if not ok:                        # out-of-scope or checkpoint -&gt; fail closed</span>
+<span class="blue">            return ACCESS_DENIED</span>
+<span class="blue">        return tool(**args)               # in-scope: execute for real</span>
+
+<span class="dim">  Same wrapper, two calls — one in scope, one not:</span>
+
+<span class="green">  ✓ ALLOW      read:PT-4827:clinical-note       receipt 8251b0b6</span>
+<span class="dim">       via read_patient_record · returned {&quot;status&quot;:&quot;ok&quot;,&quot;note&quot;:&quot;M51.36, 6wk PT f…</span>
+<span class="red">  ✗ BLOCK      read:PT-9914:clinical-note       receipt 68666f7e</span>
+<span class="dim">       gate: out of scope · returned {&quot;error&quot;:&quot;ACCESS DENIED — out of …</span></pre>
+    <pre class="term-body" id="panel-right"><span class="dim">  Same agent, same note — but every call is gated against the signed plan.</span>
+<span class="gray">  legend: ✓ ALLOW   ⏸ CHECKPOINT   ✗ BLOCK</span>
+
+<span class="green">  ✓ ALLOW      read:PT-4827:clinical-note       receipt b4818d03</span>
+<span class="dim">       via read_patient_record · returned {&quot;status&quot;:&quot;ok&quot;,&quot;note&quot;:&quot;M51.36, 6wk PT f…</span>
+<span class="green">  ✓ ALLOW      read:PT-4827:eligibility         receipt 21a4d51f</span>
+<span class="dim">       via read_patient_record · returned {&quot;status&quot;:&quot;ok&quot;,&quot;payer&quot;:&quot;Aetna PPO&quot;,&quot;act…</span>
+<span class="green">  ✓ ALLOW      read:PT-4827:payer-policy        receipt 47090797</span>
+<span class="dim">       via read_patient_record · returned {&quot;status&quot;:&quot;ok&quot;,&quot;policy&quot;:&quot;CPB-0451&quot;,&quot;cri…</span>
+<span class="red">  ✗ BLOCK      read:PT-9914:clinical-note       receipt 28e8b4a3</span>
+<span class="dim">       gate: out of scope · returned {&quot;error&quot;:&quot;ACCESS DENIED — out of …</span>
+<span class="red">  ✗ BLOCK      read:PT-4827:behavioral-health   receipt 9f4a40f2</span>
+<span class="dim">       gate: out of scope · returned {&quot;error&quot;:&quot;ACCESS DENIED — out of …</span>
+<span class="yellow">  ⏸ CHECKPOINT submit:PT-4827:auth-request      receipt 1b95be21</span>
+<span class="dim">       via submit_auth_request · human sign-off recorded</span>
+<span class="green">  ✓ ALLOW      write:PT-4827:ehr-approval       receipt d3b3934e</span>
+<span class="dim">       via write_to_ehr · returned {&quot;status&quot;:&quot;written&quot;,&quot;auth&quot;:&quot;AET-MRI-887…</span>
+
+<span class="green b">  Outcome (with AgentMint):</span>
+<span class="green">    ✓ in-scope reads allowed; out-of-scope reads blocked (2)</span>
+<span class="green">    ✓ submit held for human sign-off before it ran</span>
+<span class="green">    ✓ 7 signed receipts written to audit_pack.json</span></pre>
+    <pre class="term-body" id="panel-verify"><span class="dim">  Verification reads audit_pack.json and recomputes — no AgentMint runtime needed.</span>
+
+<span class="gray">  $ ./verify.sh audit_pack.json --pubkey health_system.pub</span>
+
+  <span class="green">✓</span> b481  read:PT-4827:clinical-note       <span class="green">sig ✓</span>  <span class="green">link ✓</span>
+  <span class="green">✓</span> 21a4  read:PT-4827:eligibility         <span class="green">sig ✓</span>  <span class="green">link ✓</span>
+  <span class="green">✓</span> 4709  read:PT-4827:payer-policy        <span class="green">sig ✓</span>  <span class="green">link ✓</span>
+  <span class="green">✓</span> 28e8  read:PT-9914:clinical-note       <span class="green">sig ✓</span>  <span class="green">link ✓</span><span class="red"> BLOCKED</span>
+  <span class="green">✓</span> 9f4a  read:PT-4827:behavioral-health   <span class="green">sig ✓</span>  <span class="green">link ✓</span><span class="red"> BLOCKED</span>
+  <span class="green">✓</span> 1b95  submit:PT-4827:auth-request      <span class="green">sig ✓</span>  <span class="green">link ✓</span>
+  <span class="green">✓</span> d3b3  write:PT-4827:ehr-approval       <span class="green">sig ✓</span>  <span class="green">link ✓</span>
+
+  Chain      7/7 receipts verified
+  Blocked    2 out-of-scope attempt(s) receipted
+  Tampered   0
+
+<span class="green b">  ✓ AUDIT PACK VERIFIED</span></pre>
+    <pre class="term-body" id="panel-tamper"><span class="dim">  Start from a clean, verified pack:</span> <span class="green">PASS</span>
+
+<span class="yellow">  ! Editing receipt 28e8 to hide the block: in_policy false -&gt; true</span>
+
+<span class="dim">  Re-verify the edited pack (signatures and links are recomputed):</span>
+
+  <span class="green">✓</span> b481  read:PT-4827:clinical-note       <span class="green">sig ✓</span>  <span class="green">link ✓</span>
+  <span class="green">✓</span> 21a4  read:PT-4827:eligibility         <span class="green">sig ✓</span>  <span class="green">link ✓</span>
+  <span class="green">✓</span> 4709  read:PT-4827:payer-policy        <span class="green">sig ✓</span>  <span class="green">link ✓</span>
+  <span class="red">✗</span> 28e8  read:PT-9914:clinical-note       <span class="red">sig ✗</span>  <span class="green">link ✓</span>
+  <span class="red">✗</span> 9f4a  read:PT-4827:behavioral-health   <span class="green">sig ✓</span>  <span class="red">link ✗</span><span class="red"> BLOCKED</span>
+  <span class="green">✓</span> 1b95  submit:PT-4827:auth-request      <span class="green">sig ✓</span>  <span class="green">link ✓</span>
+  <span class="green">✓</span> d3b3  write:PT-4827:ehr-approval       <span class="green">sig ✓</span>  <span class="green">link ✓</span>
+
+<span class="red b">  ✗ VERIFICATION FAILED — the edit invalidates receipt 28e8&#x27;s signature</span>
+<span class="red b">    and breaks the hash link from the next receipt, so the chain fails.</span>
+<span class="dim">  The original audit_pack.json on disk is unchanged.</span></pre>
+  </div>
+  <div class="legend">
+    <span><b class="green">&#10003; ALLOW</b> matched signed scope</span>
+    <span><b class="yellow">&#9208; CHECKPOINT</b> held for human sign-off</span>
+    <span><b class="red">&#10007; BLOCK</b> outside scope</span>
+  </div>
+  <p class="note">Output is real terminal output from <code>python3 chunks.py</code>, recolored to the AgentMint palette. The "With AgentMint" tab shows the deterministic gated run; the live path (<code>python3 chunks.py right</code>) uses local Qwen via LM Studio when available.</p>
+</main>
+<footer class="footer">Generated from the AgentMint local demo.</footer>
+<script>
+document.querySelectorAll('.tab').forEach(function(t){
+  t.addEventListener('click',function(){
+    var k=t.getAttribute('data-tab');
+    document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active');});
+    document.querySelectorAll('.term-body').forEach(function(x){x.classList.remove('active');});
+    t.classList.add('active');
+    document.getElementById('panel-'+k).classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
