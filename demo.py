@@ -98,6 +98,7 @@ MOCK_RESPONSES = {
     "write:PT-4827:ehr-approval": '{"status":"written","auth":"AET-MRI-88712"}',
 }
 BLOCKED_RESPONSE = '{"error":"ACCESS DENIED — out of plan scope"}'
+AGENT = "prior-auth-agent"
 SCRIPTED = [
     ("read_patient_record", {"patient_mrn": "PT-4827", "record_type": "clinical-note"}),
     ("read_patient_record", {"patient_mrn": "PT-4827", "record_type": "eligibility"}),
@@ -133,15 +134,9 @@ def tool_call_to_action(name, args):
     if name == "write_to_ehr":
         return "write:%s:ehr-approval" % mrn
     return "unknown:%s" % name
-def tool_call_label(name, args):
-    mrn = args.get("patient_mrn", "?")
-    if name == "read_patient_record":
-        return "Read %s — %s" % (args.get("record_type", "?"), mrn)
-    if name == "submit_auth_request":
-        return "Submit auth to %s — %s" % (args.get("payer_id", "?"), mrn)
-    if name == "write_to_ehr":
-        return "Write %s — %s" % (args.get("field", "?"), mrn)
-    return name
+def clip(text, width):
+    text = str(text)
+    return text if len(text) <= width else text[: width - 1] + "…"
 class Receipt:
     def __init__(self, action, agent, in_policy, reason, prev_hash):
         self.id = uuid.uuid4().hex[:8]
@@ -186,44 +181,63 @@ def pause(seconds):
 def brand():
     print(FG + BOLD + "  AgentMint Prior Auth Demo" + RESET)
     print(DIM + "  signed plan gating for local Qwen tool calls" + RESET)
+    print(GRAY + "  flow: plan -> gate -> tools -> receipts -> verify" + RESET)
     print()
 def note(text):
     print(YELLOW + "  ! " + text + RESET)
+BOX_W = 54  # inner content width; borders are computed to match
+
+
+def _rule(left, right, label):
+    inner = (" %s " % label).center(BOX_W + 2, "─") if label else "─" * (BOX_W + 2)
+    print(BLUE + "  " + left + inner + right + RESET)
+
+
 def plan_box():
     lines = [
-        ("Plan:", PLAN["id"]),
-        ("Patient:", "%s (scope locked)" % PLAN["patient"]),
-        ("Provider:", PLAN["provider"]),
-        ("Procedure:", PLAN["procedure"]),
-        ("Payer:", PLAN["payer"]),
-        ("TTL:", "%ss" % PLAN["ttl"]),
+        ("Plan", PLAN["id"]),
+        ("Patient", "%s (scope locked)" % PLAN["patient"]),
+        ("Provider", PLAN["provider"]),
+        ("Procedure", PLAN["procedure"]),
+        ("Payer", PLAN["payer"]),
+        ("Scope", "%d actions, %d checkpoint" % (len(PLAN["scope"]), len(PLAN["checkpoints"]))),
+        ("TTL", "%ss" % PLAN["ttl"]),
     ]
-    print(BLUE + "  ┌─ AgentMint ── SIGNED PLAN ─────────────────────────────┐" + RESET)
-    for left, right in lines:
-        text = "  │  %-10s %-45s│" % (left, right[:45])
-        print(BLUE + text + RESET)
-    print(BLUE + "  └────────────────────────────────── plan signed ──────────┘" + RESET)
+    _rule("┌", "┐", "AgentMint · SIGNED PLAN")
+    for label, value in lines:
+        body = "%-9s %s" % (label, value)
+        print(BLUE + "  │ " + clip(body, BOX_W).ljust(BOX_W) + " │" + RESET)
+    _rule("└", "┘", "plan signed")
     print()
-def print_status(kind, label, receipt_id, reason):
-    icon = {"pass": "✓", "block": "✗", "checkpoint": "⏸"}[kind]
-    color = {"pass": GREEN, "block": RED, "checkpoint": YELLOW}[kind]
-    suffix = {"pass": "receipt %s" % receipt_id, "block": "BLOCKED", "checkpoint": "CHECKPOINT"}[kind]
-    print(color + "  %s  %-40s %s" % (icon, label[:40], suffix) + RESET)
+STATUS = {
+    "pass": ("✓", GREEN, "ALLOW"),
+    "checkpoint": ("⏸", YELLOW, "CHECKPOINT"),
+    "block": ("✗", RED, "BLOCK"),
+}
+
+
+def print_status(kind, action, tool, receipt_id, reason, result):
+    icon, color, word = STATUS[kind]
+    print(color + "  %s %-10s %-32s receipt %s" % (icon, word, clip(action, 32), receipt_id[:8]) + RESET)
     if kind == "block":
-        print(DIM + "     reason: %s" % reason + RESET)
-    if kind == "checkpoint":
-        print(DIM + "     attestation: physician sign-off recorded" + RESET)
+        print(DIM + "       gate: %s · returned %s" % (reason, clip(result, 34)) + RESET)
+    elif kind == "checkpoint":
+        print(DIM + "       via %s · human sign-off recorded" % tool + RESET)
+    else:
+        print(DIM + "       via %s · returned %s" % (tool, clip(result, 40)) + RESET)
 def show_intro(model_name=None):
     clear()
     brand()
     plan_box()
     pause(2.0)
-    print(GRAY + "  Enforcement" + RESET)
-    print(GREEN + "    ✓ Allowed" + RESET + DIM + "  inside the signed plan scope" + RESET)
-    print(YELLOW + "    ⏸ Checkpoint" + RESET + DIM + "  requires explicit human sign-off" + RESET)
-    print(RED + "    ✗ Blocked" + RESET + DIM + "  outside scope, even if the model asks for it" + RESET)
-    print(DIM + "  Normally an agent follows prompts and note references on its own." + RESET)
-    print(DIM + "  Here every tool call is checked first, then receipted into a tamper-evident chain." + RESET)
+    print(GRAY + "  Legend" + RESET)
+    print(GREEN + "    ✓ ALLOW" + RESET + DIM + "       action matched the signed plan scope" + RESET)
+    print(YELLOW + "    ⏸ CHECKPOINT" + RESET + DIM + "  in scope, held for human sign-off" + RESET)
+    print(RED + "    ✗ BLOCK" + RESET + DIM + "       outside scope, even if the model asks for it" + RESET)
+    print()
+    print(DIM + "  A normal agent would follow the note and call tools directly." + RESET)
+    print(DIM + "  AgentMint gates each call against the signed plan, then receipts it" + RESET)
+    print(DIM + "  into a hash-linked chain. Only observable behavior is shown below." + RESET)
     print()
     print(FG + "  Agent processing prior auth for PT-4827..." + RESET)
     if model_name:
@@ -237,7 +251,8 @@ def write_audit_pack(chain, attestations):
         "receipts": [dict(r._d(), sig=r.sig) for r in chain.receipts],
     }
     with open(path, "w") as f:
-        json.dump(data, f, indent=2)
+        json.dump(data, f, indent=2, ensure_ascii=False)
+        f.write("\n")
     return path
 def detect_model_name():
     override = os.environ.get("LMSTUDIO_MODEL")
@@ -271,21 +286,22 @@ def mock_call(step, name, args):
     return name, args, False
 def handle_tool(name, args, chain, attestations):
     action = tool_call_to_action(name, args)
-    label = tool_call_label(name, args)
-    ok, reason = evaluate_policy(action, "prior-auth-agent", PLAN["scope"], PLAN["checkpoints"], PLAN["delegates"])
+    ok, reason = evaluate_policy(action, AGENT, PLAN["scope"], PLAN["checkpoints"], PLAN["delegates"])
     if ok:
-        receipt = chain.add(action, "prior-auth-agent", True, reason)
-        print_status("pass", label, receipt.id, reason)
+        result = MOCK_RESPONSES.get(action, '{"status":"ok"}')
+        receipt = chain.add(action, AGENT, True, reason)
+        print_status("pass", action, name, receipt.id, reason, result)
         pause(0.6)
-        return MOCK_RESPONSES.get(action, '{"status":"ok"}')
+        return result
     if reason.startswith("checkpoint:"):
-        receipt = chain.add(action, "prior-auth-agent", True, reason + " | attested")
+        result = MOCK_RESPONSES.get(action, '{"status":"approved"}')
+        receipt = chain.add(action, AGENT, True, reason + " | attested")
         attestations.append({"receipt": receipt.id, "note": "physician sign-off"})
-        print_status("checkpoint", label, receipt.id, reason)
+        print_status("checkpoint", action, name, receipt.id, reason, result)
         pause(1.5)
-        return MOCK_RESPONSES.get(action, '{"status":"approved"}')
-    receipt = chain.add(action, "prior-auth-agent", False, reason)
-    print_status("block", label, receipt.id, reason)
+        return result
+    receipt = chain.add(action, AGENT, False, reason)
+    print_status("block", action, name, receipt.id, reason, BLOCKED_RESPONSE)
     pause(3.0)
     return BLOCKED_RESPONSE
 def verify_and_print(chain, attestations):
@@ -293,26 +309,27 @@ def verify_and_print(chain, attestations):
     ok, count = chain.verify()
     blocked = 0
     print()
-    print(GRAY + "  ─── VERIFY ──────────────────────────────────────────────" + RESET)
+    _rule("─", "─", "VERIFY")
     print()
     print(DIM + "  $ ./verify.sh %s --pubkey health_system.pub" % path + RESET)
     print()
     for receipt in chain.receipts:
         blocked += 0 if receipt.in_policy else 1
         mark = GREEN + "✓" + RESET if receipt.sig_valid() else RED + "✗" + RESET
-        extra = "  ⚠ BLOCKED" if not receipt.in_policy else ""
-        print("  %s Receipt %s  sig valid  chain ok%s" % (mark, receipt.id[:4], extra))
+        flag = RED + " BLOCKED" + RESET if not receipt.in_policy else ""
+        print("  %s %s  %-32s sig ✓  link ✓%s" % (mark, receipt.id[:4], clip(receipt.action, 32), flag))
         pause(0.3)
     print()
-    print("  Chain:     %s/%s verified" % (count, len(chain.receipts)))
-    print("  Blocked:   %s out-of-scope" % blocked)
-    print("  Attested:  %s physician sign-off" % len(attestations))
-    print("  Tampered:  %s" % (0 if ok else 1))
+    print("  Chain      %s/%s receipts verified" % (count, len(chain.receipts)))
+    print("  Blocked    %s out-of-scope attempt(s) receipted" % blocked)
+    print("  Attested   %s physician sign-off" % len(attestations))
+    print("  Tampered   %s" % (0 if ok else 1))
     print()
-    print(GREEN + BOLD + "  ✓ AUDIT PACK VERIFIED" + RESET)
-    pause(2.0)
-    print()
+    print((GREEN if ok else RED) + BOLD + "  %s AUDIT PACK VERIFIED" % ("✓" if ok else "✗") + RESET)
     print(DIM + "  exported: %s" % path + RESET)
+    print()
+    print(BLUE + BOLD + "  end state: authorized patient stayed in scope, out-of-scope reads blocked" + RESET)
+    pause(2.0)
 def run_scripted(start=0, chain=None, attestations=None, reason=None, started=False):
     chain = chain or Chain()
     attestations = attestations or []
@@ -328,8 +345,6 @@ def run_scripted(start=0, chain=None, attestations=None, reason=None, started=Fa
     for name, args in SCRIPTED[start:]:
         handle_tool(name, args, chain, attestations)
     verify_and_print(chain, attestations)
-    print()
-    print(BLUE + BOLD + "  end state: authorized patient stayed in scope, injection failed" + RESET)
 def run_live():
     chain = Chain()
     attestations = []
@@ -370,8 +385,6 @@ def run_live():
             result = handle_tool(fn, args, chain, attestations)
             messages.append({"role": "tool", "tool_call_id": call.get("id"), "name": fn, "content": result})
     verify_and_print(chain, attestations)
-    print()
-    print(BLUE + BOLD + "  end state: authorized patient stayed in scope, injection failed" + RESET)
 if __name__ == "__main__":
     if "--scripted" in sys.argv:
         run_scripted()

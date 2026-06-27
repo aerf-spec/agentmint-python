@@ -78,7 +78,6 @@ line "$QWEN_INFO" | while IFS= read -r row; do
     QWEN_ERROR=*) line "inference test: ${row#QWEN_ERROR=}" ;;
   esac
 done
-wait_a_bit
 
 section "[2/4] cli plan setup"
 run_cmd "cd \"$TMP_DIR\" && $CLI init . --yes >/tmp/agentmint-init.$$"
@@ -92,13 +91,10 @@ PLAN_OUTPUT="$(cd "$TMP_DIR" && bash -lc "$CLI plan create --name prior-auth-dem
 line "$PLAN_OUTPUT"
 PLAN_ID="$(printf "%s\n" "$PLAN_OUTPUT" | awk '{print $4}')"
 run_cmd "cd \"$TMP_DIR\" && $CLI plan show \"$PLAN_ID\""
-wait_a_bit
 
 section "[3/4] signing notes"
-line "plan signing: the plan is signed when created with the local private key."
-line "tamper evidence: each later receipt links to the previous one by hash."
-line "verification result changes if a plan, signature, or chain link is edited."
-wait_a_bit
+line "plan is signed at creation with the local private key."
+line "each receipt links to the previous one by hash, so any edit breaks verification."
 
 section "[4/4] runtime demo"
 line "legend: ALLOW=green CHECKPOINT=yellow BLOCK=red"
