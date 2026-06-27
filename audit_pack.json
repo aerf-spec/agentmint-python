@@ -2,10 +2,10 @@
   "plan": {
     "id": "plan_7f3a2e91",
     "patient": "PT-4827",
-    "provider": "Dr. Sarah Patel \u2014 NPI 1234567890",
-    "procedure": "CPT 72148 \u2014 MRI lumbar spine w/o contrast",
-    "diagnosis": "ICD-10 M51.36 \u2014 Lumbar disc degeneration",
-    "payer": "Aetna PPO \u2014 Policy CPB-0451",
+    "provider": "Dr. Sarah Patel — NPI 1234567890",
+    "procedure": "CPT 72148 — MRI lumbar spine w/o contrast",
+    "diagnosis": "ICD-10 M51.36 — Lumbar disc degeneration",
+    "payer": "Aetna PPO — Policy CPB-0451",
     "scope": [
       "read:PT-4827:clinical-note",
       "read:PT-4827:eligibility",
@@ -23,55 +23,73 @@
   },
   "attestations": [
     {
-      "receipt": "1d921a7b",
+      "receipt": "c9e84564",
       "note": "physician sign-off"
     }
   ],
   "receipts": [
     {
-      "id": "23ba6bc5",
+      "id": "990aa4a3",
+      "action": "read:PT-4827:clinical-note",
+      "in_policy": true,
+      "reason": "matched read:PT-4827:clinical-note",
+      "prev": null,
+      "ts": "2026-06-27T16:15:57.200318+00:00",
+      "sig": "8b23e7675ebdcee1"
+    },
+    {
+      "id": "b90b71e8",
       "action": "read:PT-4827:eligibility",
       "in_policy": true,
       "reason": "matched read:PT-4827:eligibility",
-      "prev": null,
-      "ts": "2026-06-27T15:46:43.641123+00:00",
-      "sig": "d408a50e8872913c"
+      "prev": "7e5dfd31af6a98b5",
+      "ts": "2026-06-27T16:15:57.800672+00:00",
+      "sig": "a03d6e6a3e47763f"
     },
     {
-      "id": "a2302298",
+      "id": "ddf41447",
       "action": "read:PT-4827:payer-policy",
       "in_policy": true,
       "reason": "matched read:PT-4827:payer-policy",
-      "prev": "7d83eb638e98cb8e",
-      "ts": "2026-06-27T15:46:44.245546+00:00",
-      "sig": "aee271010b61c9a1"
+      "prev": "c7cb9af63cc4a2e7",
+      "ts": "2026-06-27T16:15:58.400981+00:00",
+      "sig": "a6119034c7232a1c"
     },
     {
-      "id": "2811c7af",
+      "id": "eb781d39",
       "action": "read:PT-9914:clinical-note",
       "in_policy": false,
       "reason": "out of scope",
-      "prev": "0cbc62bb80bfd8ad",
-      "ts": "2026-06-27T15:46:44.850990+00:00",
-      "sig": "31a4e5f7ff9b3b97"
+      "prev": "bbf636880996135f",
+      "ts": "2026-06-27T16:15:59.001305+00:00",
+      "sig": "7f7a341070fda04d"
     },
     {
-      "id": "1d921a7b",
+      "id": "674a333e",
+      "action": "read:PT-4827:behavioral-health",
+      "in_policy": false,
+      "reason": "out of scope",
+      "prev": "903b3fcbd50aa5da",
+      "ts": "2026-06-27T16:16:02.001630+00:00",
+      "sig": "3d346bb92551c970"
+    },
+    {
+      "id": "c9e84564",
       "action": "submit:PT-4827:auth-request",
       "in_policy": true,
       "reason": "checkpoint: submit:* | attested",
-      "prev": "c246f05b69bb6843",
-      "ts": "2026-06-27T15:47:14.864954+00:00",
-      "sig": "453bacb52a1b0188"
+      "prev": "faef566829ff7296",
+      "ts": "2026-06-27T16:16:05.002006+00:00",
+      "sig": "a9012117d110bbbf"
     },
     {
-      "id": "5e38c243",
+      "id": "591dec58",
       "action": "write:PT-4827:ehr-approval",
       "in_policy": true,
       "reason": "matched write:PT-4827:ehr-approval",
-      "prev": "f546951d996edda7",
-      "ts": "2026-06-27T15:47:16.370612+00:00",
-      "sig": "e38c955192b85c2f"
+      "prev": "3841ac57a7ad2be6",
+      "ts": "2026-06-27T16:16:06.502318+00:00",
+      "sig": "3d49dea2dbca97ce"
     }
   ]
 }
