@@ -1,7 +1,14 @@
-# AgentMint demo, split into recordable chunks.
-# Each chunk is a standalone segment you can capture on its own, e.g.:
-#   asciinema rec baseline.cast -c "python3 chunks.py baseline"
-# Usage: python3 chunks.py {baseline|plan|enforce|verify|tamper|all}
+# AgentMint demo, split into recordable segments.
+#
+# Three headline demos (each standalone, e.g. asciinema rec wrong.cast -c "python3 chunks.py wrong"):
+#   wrong       things going wrong, no AgentMint (bad outcome)
+#   instrument  instrumenting AgentMint: plan creation + tool-call wrapping
+#   right       live Qwen with AgentMint (things going right; falls back if LM Studio is down)
+#
+# Five granular chunks (building blocks):
+#   baseline | plan | enforce | verify | tamper
+#
+# Usage: python3 chunks.py {wrong|instrument|right|baseline|plan|enforce|verify|tamper|all}
 import copy
 import hashlib
 import json
@@ -12,8 +19,8 @@ import sys
 import demo
 from demo import BLUE, DIM, FG, GRAY, GREEN, RED, RESET, YELLOW, BOLD, PLAN, SCRIPTED, clip, pause
 
-CHUNKS = ["baseline", "plan", "enforce", "verify", "tamper"]
 PACK = "audit_pack.json"
+CHUNKS = ["baseline", "plan", "enforce", "verify", "tamper"]
 
 
 def banner(index, title):
@@ -21,9 +28,13 @@ def banner(index, title):
     print()
 
 
-# --- chunk 1: without AgentMint (no gate, bad outcome) -----------------------
-def chunk_baseline():
-    banner(1, "WITHOUT AGENTMINT")
+def header(title):
+    demo._rule("┌", "┐", title)
+    print()
+
+
+# --- without AgentMint: no gate, bad outcome ---------------------------------
+def do_baseline():
     print(DIM + "  No plan, no gate. The agent calls whatever the prompt and note suggest." + RESET)
     print()
     flags = {
@@ -46,14 +57,14 @@ def chunk_baseline():
     print()
 
 
-# --- chunk 2: plan creation using the CLI ------------------------------------
+# --- plan creation via the CLI ----------------------------------------------
 def _cli(args, cwd):
-    cmd = [sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "local_agentmint.py")] + args
+    here = os.path.dirname(os.path.abspath(__file__))
+    cmd = [sys.executable, os.path.join(here, "local_agentmint.py")] + args
     return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
 
 
-def chunk_plan():
-    banner(2, "PLAN CREATION (CLI)")
+def do_plan():
     workdir = os.path.join("/tmp", "agentmint-chunk-plan")
     os.makedirs(workdir, exist_ok=True)
     print(DIM + "  The signed plan is created from the CLI, before any runtime starts." + RESET)
@@ -61,7 +72,7 @@ def chunk_plan():
     print(GRAY + "  $ agentmint init . --yes" + RESET)
     init = _cli(["init", ".", "--yes"], workdir)
     if init.returncode != 0:
-        print(YELLOW + "  ! CLI unavailable here (install deps with: pip install -e .)" + RESET)
+        print(YELLOW + "  ! CLI unavailable here (install deps: pip install -e .)" + RESET)
         print(DIM + (init.stderr or init.stdout).strip()[:200] + RESET)
         return
     print(DIM + "  created .agentmint/ keystore and local signing material" + RESET)
@@ -84,9 +95,31 @@ def chunk_plan():
     print()
 
 
-# --- chunk 3: with AgentMint (gated, good outcome) ---------------------------
-def chunk_enforce():
-    banner(3, "WITH AGENTMINT")
+# --- tool-call wrapping (the instrumentation point) -------------------------
+def do_wrapping():
+    print(DIM + "  Instrumentation: route every tool call through the gate before it runs." + RESET)
+    print()
+    for code in [
+        "def guarded(tool, args):              # your agent calls tools through this",
+        "    action = to_action(tool, args)    # map the call to a policy action",
+        "    ok, why = gate(action, plan)      # check it against the signed scope",
+        "    chain.add(action, ok, why)        # sign + hash-link a receipt either way",
+        "    if not ok:                        # out-of-scope or checkpoint -> fail closed",
+        "        return ACCESS_DENIED",
+        "    return tool(**args)               # in-scope: execute for real",
+    ]:
+        print(BLUE + "    " + code + RESET)
+    print()
+    print(DIM + "  Same wrapper, two calls — one in scope, one not:" + RESET)
+    print()
+    chain = demo.Chain()
+    demo.handle_tool("read_patient_record", {"patient_mrn": "PT-4827", "record_type": "clinical-note"}, chain, [])
+    demo.handle_tool("read_patient_record", {"patient_mrn": "PT-9914", "record_type": "clinical-note"}, chain, [])
+    print()
+
+
+# --- with AgentMint: gated run, writes the receipt chain ---------------------
+def do_enforce():
     print(DIM + "  Same agent, same note — but every call is gated against the signed plan." + RESET)
     print(GRAY + "  legend: ✓ ALLOW   ⏸ CHECKPOINT   ✗ BLOCK" + RESET)
     print()
@@ -138,8 +171,7 @@ def _print_verify(rows):
         pause(0.25)
 
 
-def chunk_verify():
-    banner(4, "RECEIPT VERIFICATION")
+def do_verify():
     if not os.path.exists(PACK):
         print(YELLOW + "  ! %s not found — run: python3 chunks.py enforce" % PACK + RESET)
         return
@@ -160,9 +192,8 @@ def chunk_verify():
     print()
 
 
-# --- chunk 5: tamper evidence ------------------------------------------------
-def chunk_tamper():
-    banner(5, "TAMPER EVIDENCE")
+# --- tamper evidence --------------------------------------------------------
+def do_tamper():
     if not os.path.exists(PACK):
         print(YELLOW + "  ! %s not found — run: python3 chunks.py enforce" % PACK + RESET)
         return
@@ -188,19 +219,68 @@ def chunk_tamper():
     print()
 
 
+# --- granular chunks (n/5 banners) ------------------------------------------
+def chunk_baseline():
+    banner(1, "WITHOUT AGENTMINT")
+    do_baseline()
+
+
+def chunk_plan():
+    banner(2, "PLAN CREATION (CLI)")
+    do_plan()
+
+
+def chunk_enforce():
+    banner(3, "WITH AGENTMINT")
+    do_enforce()
+
+
+def chunk_verify():
+    banner(4, "RECEIPT VERIFICATION")
+    do_verify()
+
+
+def chunk_tamper():
+    banner(5, "TAMPER EVIDENCE")
+    do_tamper()
+
+
+# --- headline demos ---------------------------------------------------------
+def scene_wrong():
+    header("DEMO · THINGS GOING WRONG (no AgentMint)")
+    do_baseline()
+
+
+def scene_instrument():
+    header("DEMO · INSTRUMENTING AGENTMINT")
+    do_plan()
+    do_wrapping()
+
+
+def scene_right():
+    # demo.run_live() clears the screen on entry; suppress it so the header stays.
+    orig_clear = demo.clear
+    demo.clear = lambda: None
+    try:
+        header("DEMO · THINGS GOING RIGHT (live Qwen, gated)")
+        print(DIM + "  Uses LM Studio at localhost:1234 if up; otherwise falls back (labeled)." + RESET)
+        print()
+        demo.run_live()
+    finally:
+        demo.clear = orig_clear
+
+
 RUNNERS = {
-    "baseline": chunk_baseline,
-    "plan": chunk_plan,
-    "enforce": chunk_enforce,
-    "verify": chunk_verify,
-    "tamper": chunk_tamper,
+    "baseline": chunk_baseline, "plan": chunk_plan, "enforce": chunk_enforce,
+    "verify": chunk_verify, "tamper": chunk_tamper,
+    "wrong": scene_wrong, "instrument": scene_instrument, "right": scene_right,
 }
 
 
 def main(argv):
     which = argv[1] if len(argv) > 1 else "all"
     demo.clear()
-    print(FG + BOLD + "  AgentMint demo — recordable chunks" + RESET)
+    print(FG + BOLD + "  AgentMint demo — recordable segments" + RESET)
     print(GRAY + "  flow: plan -> gate -> tools -> receipts -> verify" + RESET)
     print()
     if which == "all":
@@ -210,7 +290,8 @@ def main(argv):
                 pause(1.0)
         return
     if which not in RUNNERS:
-        print(YELLOW + "  ! unknown chunk %r; choose one of: %s, all" % (which, ", ".join(CHUNKS)) + RESET)
+        names = "wrong, instrument, right, " + ", ".join(CHUNKS) + ", all"
+        print(YELLOW + "  ! unknown segment %r; choose one of: %s" % (which, names) + RESET)
         sys.exit(2)
     RUNNERS[which]()
 
